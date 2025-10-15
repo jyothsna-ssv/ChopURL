@@ -2,7 +2,9 @@
 
 A full-stack URL shortening service built with FastAPI backend and Vue.js frontend, featuring custom short codes, analytics, and a beautiful admin interface.
 
-![ChopURL Logo](admin/public/favicon.png)
+ <p align="center">
+  <img src="admin/public/favicon.png" alt="FlowStory App Banner" width="250" height ="450" />
+ </p>
 
 ---
 
@@ -22,25 +24,20 @@ A full-stack URL shortening service built with FastAPI backend and Vue.js fronte
 
 ## Features
 
-### ✨ **Core Functionality**
-- **🔗 URL Shortening** - Create short, memorable links instantly
-- **🎯 Custom Short Codes** - Use your own custom short codes
-- **📊 Click Analytics** - Track clicks and engagement metrics
-- **⚡ Instant Redirects** - Lightning-fast URL redirection with Redis
-- **🔧 Link Management** - View, delete, and manage all your links
+## Core Functionality
 
-### 🎨 **User Interface**
-- **📱 Responsive Design** - Works perfectly on all devices
-- **🎨 Modern UI/UX** - Beautiful, professional interface
-- **📈 Real-time Stats** - Live analytics dashboard
-- **🗂️ Pagination** - Efficient browsing with 8 links per page
-- **🔍 Search & Filter** - Easy link management
+- **Custom Short Links**  
+  Create your own custom short codes for memorable URLs. Choose any short code you want for your links.
 
-### 🚀 **Performance**
-- **⚡ Sub-millisecond redirects** with Redis backend
-- **📊 Real-time analytics** and click tracking
-- **🔄 Auto-generated short codes** with collision detection
-- **🛡️ Duplicate code validation** with user-friendly error messages
+- **Click Tracking**  
+  Monitor click counts for each shortened link. View detailed statistics and track link performance.
+
+- **Instant Redirects**  
+  Fast URL redirection with a Redis backend for lightning-quick access.
+
+- **Link Management**  
+  View all your shortened links in one dashboard. Delete individual links or clear all links at once.
+
 
 ---
 
@@ -51,14 +48,12 @@ A full-stack URL shortening service built with FastAPI backend and Vue.js fronte
 - **Redis** - In-memory data store for ultra-fast redirects
 - **Python 3.11+** - High-performance backend language
 - **Pydantic** - Data validation and settings management
-- **Uvicorn** - ASGI server for running the application
 
 ### **Frontend**
 - **Vue 3** - Progressive JavaScript framework
 - **Vite** - Lightning-fast build tool and dev server
 - **Vue Router** - Client-side routing
 - **Axios** - HTTP client for API communication
-- **Modern CSS** - Responsive design with gradients and animations
 
 ### **Infrastructure**
 - **Redis** - In-memory database for caching and sessions
@@ -71,40 +66,41 @@ A full-stack URL shortening service built with FastAPI backend and Vue.js fronte
 
 ```
 chopurl/
-├── backend/                    # FastAPI backend
+├── backend/
 │   ├── app/
-│   │   ├── main.py            # FastAPI application entry point
+│   │   ├── main.py
 │   │   ├── api/
-│   │   │   └── routers.py     # API route definitions
+│   │   │   └── routers.py
 │   │   ├── core/
-│   │   │   └── config.py      # Application configuration
+│   │   │   └── config.py
 │   │   ├── db/
-│   │   │   └── redis_client.py # Redis database connection
+│   │   │   └── redis_client.py
 │   │   ├── models/
-│   │   │   └── schemas.py      # Pydantic data models
+│   │   │   └── schemas.py
 │   │   ├── services/
-│   │   │   └── links.py        # Business logic for URL operations
+│   │   │   └── links.py
 │   │   └── utils/
-│   │       └── hashids.py      # URL encoding utilities
-│   └── requirements.txt        # Python dependencies
-├── admin/                       # Vue.js frontend
+│   │       └── hashids.py
+│   └── requirements.txt
+├── admin/
 │   ├── src/
-│   │   ├── components/         # Vue components
-│   │   │   ├── ShortenForm.vue    # URL shortening form
-│   │   │   ├── LinksTable.vue     # Links management table
-│   │   │   └── StatsModal.vue     # Analytics modal
-│   │   ├── views/              # Page components
-│   │   │   ├── Home.vue           # Landing page
-│   │   │   └── Links.vue          # Links dashboard
-│   │   ├── router/              # Vue Router configuration
-│   │   ├── api.ts               # Axios API client
-│   │   └── main.js              # Application entry point
+│   │   ├── components/
+│   │   │   ├── ShortenForm.vue
+│   │   │   ├── LinksTable.vue
+│   │   │   └── StatsModal.vue
+│   │   ├── views/
+│   │   │   ├── Home.vue
+│   │   │   └── Links.vue
+│   │   ├── router/
+│   │   ├── api.ts
+│   │   └── main.js
 │   ├── public/
-│   │   └── favicon.png          # Custom favicon
-│   └── package.json             # Node.js dependencies
-├── .env                        # Environment variables
-├── .gitignore                  # Git ignore rules
-└── README.md                   # This file
+│   │   └── favicon.png
+│   └── package.json
+├── .env
+├── .gitignore
+└── README.md
+
 ```
 
 ---
@@ -126,19 +122,6 @@ brew install redis
 brew services start redis
 ```
 
-#### **Ubuntu/Debian:**
-```bash
-sudo apt-get update
-sudo apt-get install redis-server
-sudo systemctl start redis
-```
-
-#### **Windows:**
-Download and install Redis from the official website or use Docker:
-```bash
-docker run -d -p 6379:6379 redis:7-alpine
-```
-
 ---
 
 ## Local Development Setup
@@ -154,7 +137,7 @@ cd ChopURL
 #### **Create Virtual Environment:**
 ```bash
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  
 ```
 
 #### **Install Dependencies:**
@@ -200,11 +183,12 @@ npm run dev
    curl http://localhost:8000/health
    ```
    Expected: `{"status":"healthy"}`
+    
 
-2. **Frontend Access:**
+3. **Frontend Access:**
    Open `http://localhost:5173` in your browser
 
-3. **API Documentation:**
+4. **API Documentation:**
    Visit `http://localhost:8000/docs` for interactive API docs
 
 ---
@@ -220,6 +204,7 @@ npm run dev
 GET /health
 ```
 **Response:** `{"status":"healthy"}`
+
 
 #### **2. Shorten URL**
 ```http
@@ -311,16 +296,23 @@ DELETE /api/v1/admin/links/clear/all
 1. **Health Check:**
    - Method: `GET`
    - URL: `http://localhost:8000/health`
+<p align="center">
+  <img src="admin/public/p1.png" alt="Backend Health Check" width="250" height ="450" />
+ </p>
 
 2. **Shorten URL:**
    - Method: `POST`
    - URL: `http://localhost:8000/api/v1/shorten`
    - Body: `{"url": "https://www.google.com"}`
-
+<p align="center">
+  <img src="admin/public/p2.png" alt="Backend Health Check" width="250" height ="450" />
+ </p>
 3. **Test Redirect:**
    - Method: `GET`
    - URL: `http://localhost:8000/{short_code}`
-
+<p align="center">
+  <img src="admin/public/p3.png" alt="Backend Health Check" width="250" height ="450" />
+ </p>
 4. **Get Stats:**
    - Method: `GET`
    - URL: `http://localhost:8000/api/v1/stats/{short_code}`
@@ -355,33 +347,6 @@ The application is fully functional when running locally:
 
 ---
 
-## Features Implementation Details
-
-### **🔗 URL Shortening**
-- **Auto-generated codes:** 6-character alphanumeric codes
-- **Custom codes:** User-defined short codes with validation
-- **Collision detection:** Prevents duplicate custom codes
-- **URL validation:** Ensures valid URLs before shortening
-
-### **📊 Analytics System**
-- **Click tracking:** Increments counter on each redirect
-- **Real-time stats:** Live analytics dashboard
-- **Performance metrics:** Total links, clicks, and averages
-- **Historical data:** Creation timestamps and click history
-
-### **🎨 User Interface**
-- **Responsive design:** Mobile-first approach
-- **Modern styling:** Gradients, shadows, and animations
-- **Intuitive navigation:** Clear user flow and navigation
-- **Error handling:** User-friendly error messages
-
-### **⚡ Performance Optimizations**
-- **Redis caching:** Sub-millisecond redirects
-- **Efficient pagination:** 8 links per page for optimal performance
-- **Lazy loading:** Components loaded on demand
-- **Optimized builds:** Minified and compressed assets
-
----
 
 ## Contributing
 
@@ -430,17 +395,10 @@ If you encounter any issues or have questions:
 
 ---
 
-## Acknowledgments
 
-- **FastAPI** - For the amazing Python web framework
-- **Vue.js** - For the progressive JavaScript framework
-- **Redis** - For the lightning-fast in-memory database
-- **Vite** - For the incredibly fast build tool
 
 ---
 
-**Built with ❤️ by the ChopURL team**
+**Built with ❤️ by the Jyothsna**
 
 ---
-
-*Last updated: January 2024*
