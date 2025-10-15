@@ -3,7 +3,7 @@
 A full-stack URL shortening service built with FastAPI backend and Vue.js frontend, featuring custom short codes, analytics, and a beautiful admin interface.
 
  <p align="center">
-  <img src="admin/public/favicon.png" alt="FlowStory App Banner" width="250" height ="450" />
+  <img src="imgg/chop.png" alt="" width="300" height ="500" />
  </p>
 
 ---
@@ -297,7 +297,7 @@ DELETE /api/v1/admin/links/clear/all
    - Method: `GET`
    - URL: `http://localhost:8000/health`
 <p align="center">
-  <img src="admin/public/p1.png" alt="Backend Health Check" width="250" height ="450" />
+  <img src="imgg/p1.png" alt="" width="550" height ="850" />
  </p>
 
 2. **Shorten URL:**
@@ -305,13 +305,13 @@ DELETE /api/v1/admin/links/clear/all
    - URL: `http://localhost:8000/api/v1/shorten`
    - Body: `{"url": "https://www.google.com"}`
 <p align="center">
-  <img src="admin/public/p2.png" alt="Backend Health Check" width="250" height ="450" />
+  <img src="imgg/p2.png" alt="" width="550" height ="850" />
  </p>
 3. **Test Redirect:**
    - Method: `GET`
    - URL: `http://localhost:8000/{short_code}`
 <p align="center">
-  <img src="admin/public/p3.png" alt="Backend Health Check" width="250" height ="450" />
+  <img src="imgg/p3.png" alt="" width="550" height ="850" />
  </p>
 4. **Get Stats:**
    - Method: `GET`
@@ -342,6 +342,13 @@ npm run test
 The application is fully functional when running locally:
 
 - **Frontend:** `http://localhost:5173` (or next available port)
+ <p align="center">
+  <img src="imgg/p4.png" alt="" width="500" height ="800" />
+ </p>
+ <br>
+ <p align="center">
+  <img src="imgg/p5.png" alt="" width="500" height ="800" />
+ </p>
 - **Backend:** `http://localhost:8000`
 - **API Docs:** `http://localhost:8000/docs`
 
@@ -378,12 +385,6 @@ We welcome contributions! Please follow these steps:
 
 ---
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## Support
 
 If you encounter any issues or have questions:
@@ -392,10 +393,6 @@ If you encounter any issues or have questions:
 2. **Search existing issues** on GitHub
 3. **Create a new issue** with detailed information
 4. **Contact the maintainers**
-
----
-
-
 
 ---
 
