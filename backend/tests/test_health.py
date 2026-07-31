@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import AsyncMock, patch
 
+from redis.exceptions import RedisError
+
 from app.main import health_check, liveness_check, ready_health_check
 
 
@@ -24,6 +26,13 @@ class HealthEndpointTest(unittest.IsolatedAsyncioTestCase):
 
         redis.ping.assert_awaited_once()
         self.assertEqual(result["status"], "ready")
+
+    async def test_readiness_propagates_redis_failures(self):
+        redis = AsyncMock()
+        redis.ping.side_effect = RedisError("unavailable")
+        with patch("app.db.redis_client.redis_client", redis):
+            with self.assertRaises(RedisError):
+                await ready_health_check()
 
 
 if __name__ == "__main__":

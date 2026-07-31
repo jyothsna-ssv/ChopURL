@@ -14,6 +14,10 @@ class AuthenticationTest(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(HTTPException, "Not authenticated"):
             await get_current_user(None)
 
+    async def test_malformed_authorization_header_is_rejected(self):
+        with self.assertRaisesRegex(HTTPException, "Not authenticated"):
+            await get_current_user("Basic token")
+
     async def test_invalid_token_is_rejected_without_auth_configuration(self):
         with patch.object(settings, "SUPABASE_URL", ""), \
                 patch.object(settings, "SUPABASE_ANON_KEY", ""), \

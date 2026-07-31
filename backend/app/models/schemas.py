@@ -1,7 +1,16 @@
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 from typing import List, Optional
 
 class URLRequest(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "url": "https://example.com/very/long/url",
+                "custom_code": "my-custom-code"
+            }
+        }
+    )
+
     url: HttpUrl
     custom_code: Optional[str] = Field(
         default=None,
@@ -21,37 +30,25 @@ class URLRequest(BaseModel):
         if value != value.strip():
             raise ValueError("Custom code cannot have leading or trailing whitespace")
         return value.strip().lower()
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "url": "https://example.com/very/long/url",
-                "custom_code": "my-custom-code"
-            }
-        }
 
 class URLResponse(BaseModel):
-    original_url: str
-    short_url: str
-    short_code: str
-    
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "original_url": "https://example.com/very/long/url",
                 "short_url": "http://localhost:8000/abc123",
                 "short_code": "abc123"
             }
         }
+    )
+
+    original_url: str
+    short_url: str
+    short_code: str
 
 class URLStats(BaseModel):
-    short_code: str
-    original_url: str
-    clicks: int
-    created_at: str
-    
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "short_code": "abc123",
                 "original_url": "https://example.com/very/long/url",
@@ -59,6 +56,12 @@ class URLStats(BaseModel):
                 "created_at": "2024-01-01T00:00:00"
             }
         }
+    )
+
+    short_code: str
+    original_url: str
+    clicks: int
+    created_at: str
 
 class LinkItem(BaseModel):
     short_code: str
@@ -76,11 +79,6 @@ class LinksPageResponse(BaseModel):
     average_clicks: float
 
 class UserInfo(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"example": {"user_id": "uuid-string"}})
+
     user_id: str
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "user_id": "uuid-string"
-            }
-        }

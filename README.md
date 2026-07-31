@@ -501,24 +501,26 @@ Authorization: Bearer <supabase-access-token>
 
 ### **Automated Testing**
 
-Backend tests cover atomic alias reservations, collision retries, concurrent click counting, TTL handling, owner-scoped deletion, pagination, anonymous-versus-authenticated URL deduplication, readiness, and invalid or expired tokens.
+Backend tests use an isolated Redis double and cover atomic alias reservations, collision retries, concurrent click counting, TTL handling, owner-scoped deletion, pagination, anonymous-versus-authenticated URL deduplication, readiness failures, JWT validation, detailed analytics access, and rate-limit enforcement.
 
 ```bash
 cd backend
-python -m unittest discover -s tests -v
+pip install -r requirements-dev.txt
+python -m pytest -q
 ```
 
-Frontend quality checks:
+Frontend tests cover authentication validation and recovery flows, protected-route redirection, public shortening, dashboard pagination totals, and inline API errors. Run the full frontend quality gate with:
 
 ```bash
 cd admin
 npm run lint
-npm run test:unit
+npm test
+npm run test:coverage
 npm run type-check
 npm run build
 ```
 
-The frontend checks include API configuration coverage, a Vue component test for link actions, ESLint source checks, and Vue type checking. GitHub Actions runs the backend suite and all frontend checks on pushes and pull requests.
+The frontend checks include API configuration coverage, Vue component tests, ESLint source checks, and Vue type checking. GitHub Actions runs the backend suite plus frontend linting, tests, type checking, and builds on pushes and pull requests.
 
 ---
 
