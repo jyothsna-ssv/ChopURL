@@ -1,518 +1,211 @@
-# ChopURL - Full-Stack URL Shortener
+# ChopURL
 
-A full-stack URL-shortening portfolio project built with a FastAPI backend and Vue 3 frontend. ChopURL supports public URL shortening, custom short codes, click analytics, Supabase authentication, password reset, and an authenticated dashboard for managing your own links.
+ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supabase Auth. It supports public and authenticated shortening, custom aliases, owner-scoped link management, password reset, and click analytics.
 
- <p align="center">
-  <img src="imgg/chop.png" alt="" width="300" height ="500" />
- </p>
+![ChopURL home screen](imgg/chop.png)
 
----
+## What It Does
 
-## Table of Contents
+- Creates public anonymous short links or links owned by an authenticated Supabase user.
+- Accepts custom aliases with server-side validation and reserved-route protection.
+- Deduplicates automatically generated links within one owner context only. Anonymous links and different users receive separate links for the same destination.
+- Redirects `/{short_code}` publicly and records aggregate clicks, last-click time, and the latest 50 click timestamps.
+- Provides public aggregate statistics without the destination URL or history; detailed analytics are available only to the owner.
+- Provides an authenticated dashboard with owner-scoped pagination, totals, deletion, and clear-all actions.
+- Supports signup, login, logout, confirmation messaging, forgotten-password emails, and reset-password callbacks through Supabase.
+- Applies configurable Redis-backed fixed-window rate limits and daily creation quotas.
 
-1. [Features](#features)
-2. [Tech Stack](#tech-stack)
-3. [Project Structure](#project-structure)
-4. [Prerequisites](#prerequisites)
-5. [Local Development Setup](#local-development-setup)
-6. [Environment Variables](#environment-variables)
-7. [API Documentation](#api-documentation)
-8. [Testing](#testing)
-9. [Local Development](#local-development)
-10. [Suggested Next Steps](#suggested-next-steps)
-11. [Contributing](#contributing)
-12. [License](#license)
+This is a single-service portfolio project. It does not claim distributed storage, fault tolerance, malware scanning, benchmarked latency, or production deployment.
 
----
+## Stack And Architecture
 
-## Features
+| Layer | Technology |
+| --- | --- |
+| API | FastAPI, Pydantic, PyJWT, httpx |
+| Data | Redis 7, redis-py asyncio |
+| Frontend | Vue 3, Vite, Vue Router, Axios |
+| Authentication | Supabase Auth |
+| Testing | pytest, Vitest, Vue Test Utils |
+| Local containers | Docker Compose, Redis, Nginx |
 
-### Core Functionality
+The backend is organized into API routes, authentication/configuration, a Redis link service, schemas, and utilities. The Vue app has dedicated API, auth, routing, component, and view layers. See [ARCHITECTURE.md](ARCHITECTURE.md) for request flows and Redis key design.
 
-- **Public URL Shortening**
-  Shorten a URL from the home page without needing to sign in.
+## Authentication And Authorization
 
-- **Custom Short Links**  
-  Create your own custom short codes for memorable URLs. Choose any short code you want for your links.
+The frontend obtains the latest Supabase session and adds its bearer token to API requests when one exists. Public shortening still works with no session. A supplied invalid or expired bearer token is rejected rather than being treated as anonymous.
 
-- **Click Tracking**  
-  Monitor click counts for each shortened link. ChopURL records total clicks, last clicked time, and recent click history.
+The backend verifies a token locally when `SUPABASE_JWT_SECRET` is configured; otherwise it verifies the session through Supabase's user endpoint. The authenticated user ID controls ownership:
 
-- **Instant Redirects**  
-  Redis-backed URL lookup for straightforward short-link redirects.
+- `GET /api/v1/admin/links`, deletion, clear-all, and `/api/v1/auth/me` require authentication.
+- A user can list, delete, and see detailed analytics only for their own links.
+- `GET /api/v1/stats/{short_code}` remains public, but returns only the code, short URL, and aggregate click count for non-owners.
+- Anonymous links have no owner-only analytics view.
 
-- **Supabase Authentication**
-  Sign up with username, email, password, and confirm password. Sign in, sign out, and reset forgotten passwords through Supabase Auth.
+## Public And Protected Endpoints
 
-- **Link Management**  
-  Signed-in users can view, copy, inspect, delete, and clear their own shortened links from the dashboard.
+| Endpoint | Access | Behavior |
+| --- | --- | --- |
+| `GET /health/live` | Public | Process liveness only. |
+| `GET /health` and `GET /health/ready` | Public | Redis readiness check; returns `503` when Redis is unavailable. |
+| `POST /api/v1/shorten` | Public or authenticated | Creates an anonymous or owned link. |
+| `GET /{short_code}` | Public | HTTP 302 redirect and click recording. |
+| `GET /api/v1/{short_code}` | Public | Returns the redirect destination as JSON and records a click. |
+| `GET /api/v1/stats/{short_code}` | Public or owner | Redacted public statistics or owner detail. |
+| `/api/v1/admin/links*` | Authenticated owner | Paginate, delete, or clear only the caller's links. |
+| `GET /api/v1/auth/me` | Authenticated | Returns the verified user ID. |
 
-- **Owner-Scoped Admin Dashboard**
-  Authenticated dashboard routes only return links created by the current signed-in user.
+## Local Setup
 
----
+### Prerequisites
 
-## Tech Stack
+- Python 3.11+ (CI and Docker use Python 3.13)
+- Node.js 20+ (required by the installed Supabase JavaScript SDK)
+- Redis 7+ or Docker
+- A Supabase project when testing authentication flows
 
-### **Backend**
-- **FastAPI** - Modern, fast web framework for building APIs
-- **Redis** - In-memory data store for short-code lookups and click metadata
-- **Python 3.11+** - Backend language; CI and container builds use Python 3.13
-- **Pydantic** - Data validation and settings management
-- **PyJWT + httpx** - Supabase token verification
+### 1. Start Redis
 
-### **Frontend**
-- **Vue 3** - Progressive JavaScript framework
-- **Vite** - Lightning-fast build tool and dev server
-- **Vue Router** - Client-side routing
-- **Axios** - HTTP client for API communication
-- **Supabase JS** - Frontend authentication client
+With Docker:
 
-### **Infrastructure**
-- **Redis** - In-memory database for caching and sessions
-- **Supabase Auth** - User signup, login, session, and password reset
-- **CORS** - Cross-origin resource sharing for local frontend/backend development
-- **Environment Variables** - Secure configuration management
-
----
-
-## Project Structure
-
-```
-chopurl/
-├── backend/
-│   ├── app/
-│   │   ├── main.py
-│   │   ├── api/
-│   │   │   └── routers.py
-│   │   ├── core/
-│   │   │   ├── auth.py
-│   │   │   └── config.py
-│   │   ├── db/
-│   │   │   └── redis_client.py
-│   │   ├── models/
-│   │   │   └── schemas.py
-│   │   ├── services/
-│   │   │   └── links.py
-│   │   └── utils/
-│   │       └── hashids.py
-│   ├── tests/
-│   │   └── test_links_service.py
-│   ├── .env.example
-│   └── requirements.txt
-├── admin/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── ShortenForm.vue
-│   │   │   ├── LinksTable.vue
-│   │   │   └── StatsModal.vue
-│   │   ├── views/
-│   │   │   ├── Home.vue
-│   │   │   ├── Links.vue
-│   │   │   └── Login.vue
-│   │   ├── router/
-│   │   ├── auth.js
-│   │   ├── api.ts
-│   │   ├── main.js
-│   │   └── supabase.js
-│   ├── public/
-│   │   └── favicon.png
-│   ├── .env.example
-│   └── package.json
-├── backend/.env
-├── admin/.env
-├── .gitignore
-└── README.md
-
-```
-
----
-
-## Prerequisites
-
-Before you begin, ensure you have the following installed:
-
-- **Python 3.11+** - [Download Python](https://www.python.org/downloads/) (CI and Docker use Python 3.13)
-- **Node.js 20+** - [Download Node.js](https://nodejs.org/) (required by the installed Supabase JavaScript SDK)
-- **Redis Server** - [Install Redis](https://redis.io/download)
-- **Supabase Project** - Required for account signup, sign-in, and password reset
-- **Git** - [Download Git](https://git-scm.com/downloads)
-
-### **Redis Installation**
-
-#### **macOS (using Homebrew):**
 ```bash
-brew install redis
-brew services start redis
+docker compose up redis
 ```
 
----
+Or with a local installation:
 
-## Local Development Setup
-
-### **1. Clone the Repository**
 ```bash
-git clone <your-repo-url>
-cd ChopURL
+redis-server
+redis-cli ping
 ```
 
-### **2. Backend Setup**
+`redis-cli ping` should return `PONG`.
 
-#### **Create Virtual Environment:**
-```bash
-python -m venv venv
-source venv/bin/activate  
-```
+### 2. Configure And Run The Backend
 
-#### **Install Dependencies:**
 ```bash
 cd backend
-pip install -r requirements.txt
-```
-
-#### **Configure Backend Environment:**
-Copy the example file and fill in your Supabase values:
-```bash
+python3 -m venv ../.venv
+source ../.venv/bin/activate
+pip install -r requirements-dev.txt
 cp .env.example .env
-```
-
-`backend/.env`:
-```env
-REDIS_URL=redis://localhost:6379
-BASE_URL=http://localhost:8000
-ALLOWED_ORIGINS=["http://localhost:5173"]
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_ANON_KEY=your-supabase-anon-key
-SUPABASE_JWT_SECRET=your-supabase-jwt-secret
-```
-
-#### **Start Redis Server:**
-```bash
-# Make sure Redis is running on port 6379
-redis-cli ping  # Should return "PONG"
-```
-
-#### **Run Backend Server:**
-```bash
-cd backend
-source ../venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Backend will be available at:** `http://localhost:8000`
+The API is available at `http://localhost:8000`; interactive OpenAPI documentation is at `http://localhost:8000/docs`.
 
-### **3. Frontend Setup**
+### 3. Configure And Run The Frontend
 
-#### **Install Dependencies:**
 ```bash
 cd admin
-npm install
-```
-
-#### **Configure Frontend Environment:**
-Copy the example file and fill in your Supabase values:
-```bash
+npm ci
 cp .env.example .env
-```
-
-`admin/.env`:
-```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-#### **Start Development Server:**
-```bash
 npm run dev
 ```
 
-**Frontend will be available at:** `http://localhost:5173` (or next available port)
+Vite prints the local URL, normally `http://localhost:5173`.
 
-### **4. Verify Installation**
+### Docker Compose
 
-1. **Backend Health Check:**
-   ```bash
-   curl http://localhost:8000/health
-   ```
-   Expected: a readiness response such as `{"status":"ready","checks":{"redis":"ok"}}`
-    
-
-2. **Frontend Access:**
-   Open `http://localhost:5173` in your browser
-
-3. **API Documentation:**
-   Visit `http://localhost:8000/docs` for interactive API docs
-
----
-
-## Docker Compose
-
-Set the Supabase values in a root `.env` file or export them in your shell, then run:
-
-```bash
-docker compose up --build
-```
-
-This starts Redis, the FastAPI service on `http://localhost:8000`, and the Vue app on `http://localhost:5173`. The frontend build reads `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` at build time.
-
----
+`docker compose up --build` runs Redis, the FastAPI API on port 8000, and the built Vue app through Nginx on port 5173. Provide Supabase variables in a local root `.env` file or export them before building; this file is not committed.
 
 ## Environment Variables
 
-### **Backend (`backend/.env`)**
+Copy the tracked examples before adding local values:
 
-| Variable | Required | Description |
+```bash
+cp backend/.env.example backend/.env
+cp admin/.env.example admin/.env
+```
+
+### Backend
+
+| Variable | Required | Purpose |
 | --- | --- | --- |
-| `REDIS_URL` | Recommended | Redis connection URL. Defaults to `redis://localhost:6379`. |
-| `APP_NAME` | Optional | Application title shown in generated API documentation. Defaults to `ChopURL`. |
-| `DEBUG` | Optional | Enables FastAPI debug mode. Defaults to `false`; keep disabled in production. |
-| `BASE_URL` | Recommended | Public base URL used when generating short links. For local dev, use `http://localhost:8000`. |
-| `ALLOWED_ORIGINS` | Required in production | JSON list of browser origins permitted to call the API, for example `["https://app.example.com"]`. |
-| `SHORT_URL_LENGTH` | Optional | Length of automatically generated aliases. Defaults to `6`. |
-| `SUPABASE_URL` | Yes for auth | Supabase project URL. |
-| `SUPABASE_ANON_KEY` | Yes for auth | Supabase anon/public API key. |
-| `SUPABASE_JWT_SECRET` | Recommended | JWT secret used for local token verification before falling back to Supabase user lookup. |
-| `BLOCKED_HOSTS` | Optional | JSON list of destination hosts or subdomains to reject. Private and local destinations are always rejected. |
-| `USER_CREATE_LIMIT_PER_DAY` | Recommended | Authenticated link creation quota. Defaults to `100`. |
-| `ANONYMOUS_CREATE_LIMIT_PER_DAY` | Recommended | Per-IP anonymous link creation quota. Defaults to `20`. |
-| `SHORTEN_RATE_LIMIT` | Recommended | Per-IP shortening rate limit. Defaults to `10/minute`. |
-| `REDIRECT_RATE_LIMIT` | Recommended | Per-IP redirect rate limit. Defaults to `120/minute`. |
-| `STATS_RATE_LIMIT` | Recommended | Per-IP statistics rate limit. Defaults to `60/minute`. |
-| `ADMIN_RATE_LIMIT` | Recommended | Per-IP authenticated API rate limit. Defaults to `60/minute`. |
+| `REDIS_URL` | Yes | Redis connection URL. |
+| `APP_NAME` | No | FastAPI documentation title; defaults to `ChopURL`. |
+| `DEBUG` | No | FastAPI debug mode; keep `false` in production. |
+| `BASE_URL` | Yes | Public base URL used in generated links. |
+| `ALLOWED_ORIGINS` | Yes in browser deployments | JSON array of allowed frontend origins. |
+| `SHORT_URL_LENGTH` | No | Generated alias length; defaults to `6`. |
+| `SUPABASE_URL` | For authentication | Supabase project URL for fallback token verification. |
+| `SUPABASE_ANON_KEY` | For authentication | Supabase anon/public key used for fallback verification. |
+| `SUPABASE_JWT_SECRET` | Recommended for authentication | HS256 JWT secret for local verification. |
+| `BLOCKED_HOSTS` | No | JSON array of destination hosts/subdomains to reject. |
+| `USER_CREATE_LIMIT_PER_DAY` | No | Authenticated creation quota; defaults to `100`. |
+| `ANONYMOUS_CREATE_LIMIT_PER_DAY` | No | Per-IP anonymous creation quota; defaults to `20`. |
+| `SHORTEN_RATE_LIMIT` | No | Per-IP fixed-window shorten limit; defaults to `10/minute`. |
+| `REDIRECT_RATE_LIMIT` | No | Per-IP fixed-window redirect limit; defaults to `120/minute`. |
+| `STATS_RATE_LIMIT` | No | Per-IP fixed-window stats limit; defaults to `60/minute`. |
+| `ADMIN_RATE_LIMIT` | No | Per-IP fixed-window admin limit; defaults to `60/minute`. |
 
-### **Frontend (`admin/.env`)**
+### Frontend
 
-| Variable | Required | Description |
+| Variable | Required | Purpose |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | Required for separate frontend/API deployments | Backend API base URL. Local development defaults to `http://localhost:8000/api/v1`; production builds without it use same-origin `/api/v1`. |
-| `VITE_SUPABASE_URL` | Yes for auth | Supabase project URL used by the Vue app. |
-| `VITE_SUPABASE_ANON_KEY` | Yes for auth | Supabase anon/public API key used by the Vue app. |
+| `VITE_API_BASE_URL` | For separate API/frontend deployments | API base URL. In development it defaults to `http://localhost:8000/api/v1`; production falls back to same-origin `/api/v1`. |
+| `VITE_SUPABASE_URL` | For authentication | Supabase project URL. |
+| `VITE_SUPABASE_ANON_KEY` | For authentication | Supabase anon/public key. |
 
-### **Supabase Password Reset Setup**
+Never commit `.env` files, service-role keys, JWT secrets, or Redis credentials. The anon key is designed for browser use but should still be limited by Supabase project configuration.
 
-In Supabase, add your local frontend URL to the allowed redirect URLs:
+## Supabase And Password Reset
+
+Create a Supabase project, enable email/password authentication, and copy its URL and anon key into both local environment files. Set `SUPABASE_JWT_SECRET` in the backend when local HS256 verification is desired.
+
+Add the deployed frontend callback URL, plus local development callbacks, to Supabase Auth redirect URLs:
 
 ```text
 http://localhost:5173/login?mode=reset
 http://127.0.0.1:5173/login?mode=reset
+https://your-frontend.example/login?mode=reset
 ```
 
-This lets the "Forgot password?" email return users to the ChopURL reset-password form.
+The app sends reset emails back to `/login?mode=reset`. Email confirmation behavior is controlled by the Supabase project settings.
 
----
+## API Examples
 
-## API Documentation
+Create an anonymous link:
 
-### **Base URL:** `http://localhost:8000`
-
-Authenticated endpoints require:
-
-```http
-Authorization: Bearer <supabase-access-token>
+```bash
+curl -X POST http://localhost:8000/api/v1/shorten \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com/docs","custom_code":"example-docs"}'
 ```
 
-### **Endpoints**
+Create or manage an owned link by supplying a Supabase access token:
 
-#### **1. Health Check**
-```http
-GET /health
-```
-Backward-compatible readiness endpoint. It verifies Redis connectivity and returns `503` when Redis is unavailable.
-
-```http
-GET /health/live
+```bash
+curl 'http://localhost:8000/api/v1/admin/links?skip=0&limit=8' \
+  -H 'Authorization: Bearer <supabase-access-token>'
 ```
 
-Liveness check. It does not require external dependencies.
+Public statistics are intentionally redacted:
 
-```http
-GET /health/ready
+```bash
+curl http://localhost:8000/api/v1/stats/example-docs
 ```
 
-Readiness check. It performs the same lightweight Redis ping as `/health`.
+The owner can use the same endpoint with a bearer token to receive the original URL, timestamps, and recent click history.
 
+## Rate Limits And Destination Checks
 
-#### **2. Shorten URL**
-```http
-POST /api/v1/shorten
-Content-Type: application/json
+SlowAPI stores fixed-window per-IP rate-limit counters in Redis. Creation also has separate per-user or per-IP daily quotas. Limit values are environment-configurable and requests above a route limit return HTTP `429`.
 
-{
-  "url": "https://www.example.com",
-  "custom_code": "example"  // Optional
-}
-```
+Custom aliases must be 3-32 characters using letters, numbers, `_`, or `-`; leading/trailing whitespace and reserved route names are rejected. Destination validation rejects URLs with embedded credentials, localhost, literal private/reserved IP addresses, and configured blocked hosts.
 
-**Response:**
-```json
-{
-  "original_url": "https://www.example.com",
-  "short_url": "http://localhost:8000/abc123",
-  "short_code": "abc123"
-}
-```
+These are basic controls only. ChopURL does not scan destinations for malware, resolve hostnames to block every private-network target, provide reporting/disable workflows, or enforce organization-level quotas.
 
-If a signed-in user creates the link, the backend associates the short code with that user for dashboard management. Requests without a bearer token remain anonymous; an invalid or expired bearer token is rejected rather than silently creating an unowned link.
+## Development Commands
 
-Custom codes must be 3-32 characters, cannot have leading or trailing whitespace, and can contain only letters, numbers, underscores, and hyphens. Reserved route prefixes including `api`, `admin`, `auth`, `stats`, `docs`, `health`, `redoc`, and `openapi.json` cannot be used as short codes.
-Shortening requests are rate-limited, subject to daily authenticated or anonymous quotas, and reject local, private, reserved, or configured blocked destinations. These controls are basic abuse mitigation, not comprehensive malicious-URL detection.
-
-#### **3. Redirect (Short URL)**
-```http
-GET /{short_code}
-```
-**Response:** HTTP 302 redirect to original URL
-
-#### **4. Get Link Statistics**
-```http
-GET /api/v1/stats/{short_code}
-```
-
-Without an owner token, statistics are intentionally limited:
-
-```json
-{
-  "short_code": "abc123",
-  "short_url": "http://localhost:8000/abc123",
-  "clicks": 5
-}
-```
-
-The owner can send the bearer token to receive detailed analytics:
-
-```json
-{
-  "short_code": "abc123",
-  "original_url": "https://www.example.com",
-  "short_url": "http://localhost:8000/abc123",
-  "clicks": 5,
-  "created_at": "2024-01-15 10:30:00+00:00",
-  "last_clicked": "2024-01-15 10:45:00+00:00",
-  "click_history": [
-    "2024-01-15 10:45:00+00:00"
-  ]
-}
-```
-
-Anonymous links do not have an owner-authenticated analytics view. Their public statistics remain limited to the short URL, code, and aggregate click count.
-
-#### **5. Admin - Get All Links**
-```http
-GET /api/v1/admin/links?skip=0&limit=8
-Authorization: Bearer <supabase-access-token>
-```
-
-Returns the current user's links only, along with pagination and dataset-wide dashboard totals:
-
-```json
-{
-  "items": [],
-  "total": 127,
-  "skip": 0,
-  "limit": 8,
-  "total_clicks": 245,
-  "average_clicks": 1.93
-}
-```
-
-#### **6. Admin - Delete Link**
-```http
-DELETE /api/v1/admin/links/{short_code}
-Authorization: Bearer <supabase-access-token>
-```
-
-Deletes the link only if it belongs to the current user.
-
-#### **7. Admin - Clear All Links**
-```http
-DELETE /api/v1/admin/links/clear/all
-Authorization: Bearer <supabase-access-token>
-```
-
-Clears all links owned by the current user.
-
-#### **8. Auth - Current User**
-```http
-GET /api/v1/auth/me
-Authorization: Bearer <supabase-access-token>
-```
-
----
-
-## Testing
-
-### **Manual Testing**
-
-#### **1. Frontend Testing**
-1. Open `http://localhost:5173`
-2. **Test URL Shortening:**
-   - Enter a long URL
-   - Click "Shorten URL"
-   - Verify short URL is generated
-3. **Test Custom Codes:**
-   - Enter a custom code
-   - Verify it works
-   - Try duplicate custom code (should show error)
-4. **Test Analytics:**
-   - Click on generated links
-   - View stats in the dashboard or through `/api/v1/stats/{short_code}`
-5. **Test Authentication:**
-   - Sign up with username, email, password, and confirm password
-   - Confirm the account if email confirmation is enabled in Supabase
-   - Sign in and sign out
-   - Use "Forgot password?" and confirm the reset email returns to `/login?mode=reset`
-6. **Test Management:**
-   - Sign in
-   - Navigate to "View All Links"
-   - Test pagination (8 links per page)
-   - Test delete functionality
-   - Test "Clear All" functionality for the signed-in user's links
-
-#### **2. API Testing with Postman**
-
-**Create Postman Collection:**
-
-1. **Health Check:**
-   - Method: `GET`
-   - URL: `http://localhost:8000/health`
-<p align="center">
-  <img src="imgg/p1.png" alt="" width="550" height ="850" />
- </p>
-
-2. **Shorten URL:**
-   - Method: `POST`
-   - URL: `http://localhost:8000/api/v1/shorten`
-   - Body: `{"url": "https://www.google.com"}`
-<p align="center">
-  <img src="imgg/p2.png" alt="" width="550" height ="850" />
- </p>
-3. **Test Redirect:**
-   - Method: `GET`
-   - URL: `http://localhost:8000/{short_code}`
-<p align="center">
-  <img src="imgg/p3.png" alt="" width="550" height ="850" />
- </p>
-4. **Get Stats:**
-   - Method: `GET`
-   - URL: `http://localhost:8000/api/v1/stats/{short_code}`
-
-5. **Admin Operations:**
-   - Method: `GET`
-   - URL: `http://localhost:8000/api/v1/admin/links`
-   - Header: `Authorization: Bearer <supabase-access-token>`
-
-### **Automated Testing**
-
-Backend tests use an isolated Redis double and cover atomic alias reservations, collision retries, concurrent click counting, TTL handling, owner-scoped deletion, pagination, anonymous-versus-authenticated URL deduplication, readiness failures, JWT validation, detailed analytics access, and rate-limit enforcement.
+Backend:
 
 ```bash
 cd backend
-pip install -r requirements-dev.txt
-python -m pytest -q
+../.venv/bin/python -m pytest -q
+../.venv/bin/python -m pip check
 ```
 
-Frontend tests cover authentication validation and recovery flows, protected-route redirection, public shortening, dashboard pagination totals, and inline API errors. Run the full frontend quality gate with:
+Frontend:
 
 ```bash
 cd admin
@@ -523,84 +216,20 @@ npm run type-check
 npm run build
 ```
 
-The frontend checks include API configuration coverage, Vue component tests, ESLint source checks, and Vue type checking. GitHub Actions runs the backend suite plus frontend linting, tests, type checking, and builds on pushes and pull requests.
+GitHub Actions runs the backend pytest suite and frontend lint, tests, type-check, and build on pushes and pull requests.
 
----
+## Deployment Status And Limitations
 
-## Local Development
+Docker Compose has been validated for local development. No production deployment target, benchmark, high-availability topology, replication strategy, or managed monitoring setup is configured in this repository.
 
-The application is fully functional when running locally:
+Redis is the only data store, so Redis data loss removes links and analytics. Click totals are atomically incremented in Redis, but analytics remain request-path work and there is no durable event stream or background processing. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current design and realistic next steps.
 
-- **Frontend:** `http://localhost:5173` (or next available port)
- <p align="center">
-  <img src="imgg/p4.png" alt="" width="500" height ="800" />
- </p>
- <br>
- <p align="center">
-  <img src="imgg/p5.png" alt="" width="500" height ="800" />
- </p>
-- **Backend:** `http://localhost:8000`
-- **API Docs:** `http://localhost:8000/docs`
+## Security
 
----
-
-## Suggested Next Steps
-
-- Add frontend tests for signup validation, password confirmation, forgot-password mode, and dashboard loading states.
-- Add API-level integration tests with FastAPI's test client once a Redis test container or fixture is available.
-- Add a production deployment section once the hosting target is chosen.
-- Add screenshots for the new login, signup, forgot-password, and dashboard flows.
-
----
-
-
-## Contributing
-
-We welcome contributions! Please follow these steps:
-
-1. **Fork the repository**
-2. **Create a feature branch:**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-3. **Make your changes**
-4. **Add tests for new functionality**
-5. **Commit your changes:**
-   ```bash
-   git commit -m "Add amazing feature"
-   ```
-6. **Push to the branch:**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-7. **Open a Pull Request**
-
-### **Development Guidelines**
-- Follow PEP 8 for Python code
-- Use ESLint for JavaScript/Vue code
-- Write meaningful commit messages
-- Add tests for new features
-- Update documentation as needed
-
----
-
-## Support
-
-If you encounter any issues or have questions:
-
-1. **Check the documentation** above
-2. **Search existing issues** on GitHub
-3. **Create a new issue** with detailed information
-4. **Contact the maintainers**
-
----
+See [SECURITY.md](SECURITY.md) for reporting guidance, trust boundaries, secret handling, and known limitations. See [CONTRIBUTING.md](CONTRIBUTING.md) for development and pull-request expectations.
 
 ## License
 
-This project is licensed under the terms in [LICENSE](LICENSE).
+This repository does not currently include a license file.
 
----
-
-**Built with ❤️ by the Jyothsna**
-
----
+Built by Jyothsna Karuparthi.
