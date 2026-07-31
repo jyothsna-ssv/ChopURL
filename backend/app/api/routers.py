@@ -1,5 +1,13 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends, Query, Request
-from app.core.errors import LinkNotFoundError, LinkOwnershipError
+from app.core.errors import (
+    LinkNotFoundError,
+    LinkOwnershipError,
+    LinkValidationError,
+    ShortCodeConflictError,
+    ShortCodeGenerationError,
+)
 from app.models.schemas import LinksPageResponse, URLRequest, URLResponse
 from app.services.links import LinkService, QuotaExceededError
 from app.core.auth import get_current_user, get_optional_user
@@ -8,6 +16,7 @@ from app.core.rate_limit import limiter
 from slowapi.util import get_remote_address
 
 router = APIRouter()
+logger = logging.getLogger("chopurl.api")
 
 @router.post("/shorten", response_model=URLResponse)
 @limiter.limit(settings.SHORTEN_RATE_LIMIT)
@@ -28,10 +37,15 @@ async def shorten_url(request: Request, payload: URLRequest, user_id: str = Depe
             short_url=short_url,
             short_code=short_url.split("/")[-1]
         )
-    except QuotaExceededError as e:
-        raise HTTPException(status_code=429, detail=str(e))
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except QuotaExceededError:
+        raise HTTPException(status_code=429, detail="Daily link creation limit reached")
+    except ShortCodeConflictError:
+        raise HTTPException(status_code=409, detail="Custom code is already in use")
+    except LinkValidationError as error:
+        raise HTTPException(status_code=400, detail=error.args[0])
+    except ShortCodeGenerationError:
+        logger.error("short_code_generation_exhausted")
+        raise HTTPException(status_code=503, detail="Unable to allocate a short code. Please try again.")
 
 @router.get("/{short_code}")
 @limiter.limit(settings.REDIRECT_RATE_LIMIT)

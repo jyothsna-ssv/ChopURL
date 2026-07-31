@@ -235,7 +235,7 @@ npm run dev
    ```bash
    curl http://localhost:8000/health
    ```
-   Expected: a readiness response such as `{"status":"ready","checks":{"redis":"ok","supabase_auth":"ok"}}`
+   Expected: a readiness response such as `{"status":"ready","checks":{"redis":"ok"}}`
     
 
 2. **Frontend Access:**
@@ -315,13 +315,19 @@ Authorization: Bearer <supabase-access-token>
 ```http
 GET /health
 ```
-Readiness check. It verifies Redis and Supabase Auth configuration and returns `503` when a required dependency is unavailable.
+Backward-compatible readiness endpoint. It verifies Redis connectivity and returns `503` when Redis is unavailable.
 
 ```http
 GET /health/live
 ```
 
 Liveness check. It does not require external dependencies.
+
+```http
+GET /health/ready
+```
+
+Readiness check. It performs the same lightweight Redis ping as `/health`.
 
 
 #### **2. Shorten URL**
@@ -346,8 +352,8 @@ Content-Type: application/json
 
 If a signed-in user creates the link, the backend associates the short code with that user for dashboard management. Requests without a bearer token remain anonymous; an invalid or expired bearer token is rejected rather than silently creating an unowned link.
 
-Custom codes must be 3-32 characters and can contain letters, numbers, underscores, and hyphens. Reserved routes such as `api`, `docs`, and `health` cannot be used as short codes.
-Shortening requests are rate-limited, subject to daily authenticated or anonymous quotas, and reject local, private, reserved, or configured blocked destinations.
+Custom codes must be 3-32 characters, cannot have leading or trailing whitespace, and can contain only letters, numbers, underscores, and hyphens. Reserved route prefixes including `api`, `admin`, `auth`, `stats`, `docs`, `health`, `redoc`, and `openapi.json` cannot be used as short codes.
+Shortening requests are rate-limited, subject to daily authenticated or anonymous quotas, and reject local, private, reserved, or configured blocked destinations. These controls are basic abuse mitigation, not comprehensive malicious-URL detection.
 
 #### **3. Redirect (Short URL)**
 ```http
@@ -385,6 +391,8 @@ The owner can send the bearer token to receive detailed analytics:
   ]
 }
 ```
+
+Anonymous links do not have an owner-authenticated analytics view. Their public statistics remain limited to the short URL, code, and aggregate click count.
 
 #### **5. Admin - Get All Links**
 ```http

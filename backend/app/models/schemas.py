@@ -18,6 +18,8 @@ class URLRequest(BaseModel):
             return value
         if not isinstance(value, str):
             return value
+        if value != value.strip():
+            raise ValueError("Custom code cannot have leading or trailing whitespace")
         return value.strip().lower()
     
     class Config:

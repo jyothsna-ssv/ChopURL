@@ -63,15 +63,22 @@ app.include_router(router, prefix="/api/v1")
 async def root():
     return {"message": "ChopURL API is running"}
 
-@app.get("/health")
-async def health_check():
+async def readiness_check():
     from app.db.redis_client import redis_client
 
     await redis_client.ping()
-    supabase_ready = bool(settings.SUPABASE_URL and settings.SUPABASE_ANON_KEY)
-    if not supabase_ready:
-        raise HTTPException(status_code=503, detail="Authentication dependency is not configured")
-    return {"status": "ready", "checks": {"redis": "ok", "supabase_auth": "ok"}}
+    return {"status": "ready", "checks": {"redis": "ok"}}
+
+
+@app.get("/health")
+async def health_check():
+    """Backward-compatible readiness alias."""
+    return await readiness_check()
+
+
+@app.get("/health/ready")
+async def ready_health_check():
+    return await readiness_check()
 
 
 @app.get("/health/live")

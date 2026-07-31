@@ -10,6 +10,10 @@ class URLRequestSchemaTest(unittest.TestCase):
         with self.assertRaises(ValidationError):
             URLRequest.model_validate({"url": "https://example.com", "custom_code": 123})
 
+    def test_custom_code_with_outer_whitespace_is_rejected(self):
+        with self.assertRaisesRegex(ValidationError, "leading or trailing whitespace"):
+            URLRequest.model_validate({"url": "https://example.com", "custom_code": " launch "})
+
 
 if __name__ == "__main__":
     unittest.main()

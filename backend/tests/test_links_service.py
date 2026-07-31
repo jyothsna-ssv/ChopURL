@@ -4,7 +4,12 @@ import unittest
 from unittest.mock import patch
 
 from app.core.config import settings
-from app.core.errors import LinkOwnershipError
+from app.core.errors import (
+    LinkOwnershipError,
+    LinkValidationError,
+    ShortCodeConflictError,
+    ShortCodeGenerationError,
+)
 from app.services.links import LINK_TTL_SECONDS, LinkService, QuotaExceededError
 
 
@@ -191,8 +196,10 @@ class LinkServiceTest(unittest.IsolatedAsyncioTestCase):
         self.service.base_url = "http://testserver"
 
     async def test_reserved_custom_codes_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, "reserved"):
-            await self.service.create_short_url("https://example.com", "health")
+        for reserved_code in ("api", "health", "docs", "redoc", "openapi.json", "admin", "auth", "stats"):
+            with self.subTest(reserved_code=reserved_code):
+                with self.assertRaisesRegex(LinkValidationError, "reserved"):
+                    await self.service.create_short_url("https://example.com", reserved_code)
 
     async def test_invalid_custom_codes_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "3-32 characters"):
@@ -218,13 +225,23 @@ class LinkServiceTest(unittest.IsolatedAsyncioTestCase):
                 )
 
     async def test_duplicate_custom_codes_are_rejected(self):
-        await self.service.create_short_url("https://example.com/one", " Launch ")
+        await self.service.create_short_url("https://example.com/one", "launch")
 
-        with self.assertRaisesRegex(ValueError, "already exists"):
+        with self.assertRaises(ShortCodeConflictError):
             await self.service.create_short_url("https://example.com/two", "LAUNCH")
 
         self.assertIsNotNone(await self.service.redis.get("short:launch"))
         self.assertTrue(any(call["nx"] for call in self.service.redis.set_calls))
+
+    async def test_custom_code_whitespace_is_rejected_by_the_service(self):
+        with self.assertRaisesRegex(LinkValidationError, "leading or trailing whitespace"):
+            await self.service.create_short_url("https://example.com", " launch ")
+
+    async def test_generated_code_retries_have_a_controlled_failure(self):
+        with patch("app.services.links.generate_short_code", return_value="taken1"):
+            await self.service.redis.setex("short:taken1", LINK_TTL_SECONDS, "{}")
+            with self.assertRaises(ShortCodeGenerationError):
+                await self.service.create_short_url("https://example.com")
 
     async def test_duplicate_alias_does_not_consume_creation_quota(self):
         with patch.object(settings, "ANONYMOUS_CREATE_LIMIT_PER_DAY", 1):
@@ -234,7 +251,7 @@ class LinkServiceTest(unittest.IsolatedAsyncioTestCase):
                 quota_key="ip:127.0.0.1",
             )
 
-            with self.assertRaisesRegex(ValueError, "already exists"):
+            with self.assertRaises(ShortCodeConflictError):
                 await self.service.create_short_url(
                     "https://example.com/two",
                     "quota01",

@@ -2,7 +2,13 @@ from app.db.redis_client import redis_client
 from app.utils.hashids import generate_short_code
 from app.utils.url_safety import validate_destination_url
 from app.core.config import settings
-from app.core.errors import LinkNotFoundError, LinkOwnershipError
+from app.core.errors import (
+    LinkNotFoundError,
+    LinkOwnershipError,
+    LinkValidationError,
+    ShortCodeConflictError,
+    ShortCodeGenerationError,
+)
 from redis.exceptions import RedisError
 import json
 import re
@@ -19,6 +25,9 @@ RESERVED_SHORT_CODES = {
     "health",
     "openapi.json",
     "redoc",
+    "admin",
+    "auth",
+    "stats",
     "favicon.ico",
     "robots.txt",
 }
@@ -41,14 +50,16 @@ class LinkService:
         """Create a shortened URL and store it in Redis"""
         validate_destination_url(original_url)
         if custom_code is not None:
-            custom_code = custom_code.strip().lower()
+            if custom_code != custom_code.strip():
+                raise LinkValidationError("Custom code cannot have leading or trailing whitespace")
+            custom_code = custom_code.lower()
         # If custom code is provided, use it
         if custom_code:
-            if not SHORT_CODE_PATTERN.fullmatch(custom_code):
-                raise ValueError("Custom code must be 3-32 characters and use only letters, numbers, underscores, or hyphens")
-
             if custom_code.lower() in RESERVED_SHORT_CODES:
-                raise ValueError(f"Custom code '{custom_code}' is reserved")
+                raise LinkValidationError(f"Custom code '{custom_code}' is reserved")
+
+            if not SHORT_CODE_PATTERN.fullmatch(custom_code):
+                raise LinkValidationError("Custom code must be 3-32 characters and use only letters, numbers, underscores, or hyphens")
 
             short_code = custom_code
         else:
@@ -76,7 +87,7 @@ class LinkService:
         if custom_code:
             created = await self._store_link_record(short_code, link_data)
             if not created:
-                raise ValueError(f"Custom code '{short_code}' already exists")
+                raise ShortCodeConflictError(short_code)
         else:
             short_code = await self._store_generated_link_record(link_data)
         
@@ -196,7 +207,7 @@ class LinkService:
             if await self._store_link_record(short_code, link_data):
                 return short_code
 
-        raise ValueError("Unable to generate a unique short code. Please try again.")
+        raise ShortCodeGenerationError("Generated short-code collision retries were exhausted")
 
     def _url_cache_key(self, original_url: str, user_id: str = None) -> str:
         """Build the reverse lookup key scoped to anonymous or authenticated links."""
