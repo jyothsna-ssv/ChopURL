@@ -57,7 +57,7 @@ A full-stack URL-shortening portfolio project built with a FastAPI backend and V
 ### **Backend**
 - **FastAPI** - Modern, fast web framework for building APIs
 - **Redis** - In-memory data store for short-code lookups and click metadata
-- **Python 3.11+** - High-performance backend language
+- **Python 3.11+** - Backend language; CI and container builds use Python 3.13
 - **Pydantic** - Data validation and settings management
 - **PyJWT + httpx** - Supabase token verification
 
@@ -132,8 +132,8 @@ chopurl/
 
 Before you begin, ensure you have the following installed:
 
-- **Python 3.11+** - [Download Python](https://www.python.org/downloads/)
-- **Node.js 18+** - [Download Node.js](https://nodejs.org/)
+- **Python 3.11+** - [Download Python](https://www.python.org/downloads/) (CI and Docker use Python 3.13)
+- **Node.js 20+** - [Download Node.js](https://nodejs.org/) (required by the installed Supabase JavaScript SDK)
 - **Redis Server** - [Install Redis](https://redis.io/download)
 - **Supabase Project** - Required for account signup, sign-in, and password reset
 - **Git** - [Download Git](https://git-scm.com/downloads)
@@ -265,8 +265,11 @@ This starts Redis, the FastAPI service on `http://localhost:8000`, and the Vue a
 | Variable | Required | Description |
 | --- | --- | --- |
 | `REDIS_URL` | Recommended | Redis connection URL. Defaults to `redis://localhost:6379`. |
+| `APP_NAME` | Optional | Application title shown in generated API documentation. Defaults to `ChopURL`. |
+| `DEBUG` | Optional | Enables FastAPI debug mode. Defaults to `false`; keep disabled in production. |
 | `BASE_URL` | Recommended | Public base URL used when generating short links. For local dev, use `http://localhost:8000`. |
 | `ALLOWED_ORIGINS` | Required in production | JSON list of browser origins permitted to call the API, for example `["https://app.example.com"]`. |
+| `SHORT_URL_LENGTH` | Optional | Length of automatically generated aliases. Defaults to `6`. |
 | `SUPABASE_URL` | Yes for auth | Supabase project URL. |
 | `SUPABASE_ANON_KEY` | Yes for auth | Supabase anon/public API key. |
 | `SUPABASE_JWT_SECRET` | Recommended | JWT secret used for local token verification before falling back to Supabase user lookup. |

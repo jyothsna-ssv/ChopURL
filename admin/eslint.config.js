@@ -4,7 +4,7 @@ import globals from 'globals'
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['coverage/**', 'dist/**', 'node_modules/**'],
   },
   eslint.configs.recommended,
   ...vue.configs['flat/base'],

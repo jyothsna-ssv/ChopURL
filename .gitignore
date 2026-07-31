@@ -177,7 +177,9 @@ backend/app/__pycache__/
 backend/app/*/__pycache__/
 admin/dist/
 admin/.vite/
-.vercel
+
+# Local deployment-provider state. Deployment configuration files remain trackable.
+.vercel/
 
 # Deployment and build artifacts
 .netlify/

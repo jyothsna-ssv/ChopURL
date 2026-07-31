@@ -14,9 +14,10 @@ from app.core.rate_limit import limiter
 logger = logging.getLogger("chopurl")
 
 app = FastAPI(
-    title="ChopURL API",
+    title=settings.APP_NAME,
     description="A URL shortening service",
-    version="1.0.0"
+    version="1.0.0",
+    debug=settings.DEBUG,
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
