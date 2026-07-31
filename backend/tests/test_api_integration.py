@@ -4,6 +4,8 @@ import jwt
 import pytest
 from fastapi.testclient import TestClient
 from limits import parse
+from limits.storage import storage_from_string
+from limits.strategies import FixedWindowRateLimiter
 from redis.exceptions import RedisError
 
 from app.core.config import settings
@@ -171,3 +173,21 @@ def test_rate_limiter_enforces_the_configured_shortening_window():
 
     assert all(test_limiter.limiter.hit(rate, "test-client") for _ in range(rate.amount))
     assert not test_limiter.limiter.hit(rate, "test-client")
+
+
+def test_shorten_endpoint_returns_429_when_its_rate_limit_is_exceeded(monkeypatch):
+    redis = FakeRedis()
+    monkeypatch.setattr(links_module, "redis_client", redis)
+    memory_storage = storage_from_string("memory://")
+    monkeypatch.setattr(limiter, "_storage", memory_storage)
+    monkeypatch.setattr(limiter, "_limiter", FixedWindowRateLimiter(memory_storage))
+    monkeypatch.setattr(limiter, "enabled", True)
+
+    with TestClient(app) as test_client:
+        for _ in range(10):
+            response = test_client.post("/api/v1/shorten", json={"url": "https://example.com/rate-limit"})
+            assert response.status_code == 200
+
+        response = test_client.post("/api/v1/shorten", json={"url": "https://example.com/rate-limit"})
+
+    assert response.status_code == 429
