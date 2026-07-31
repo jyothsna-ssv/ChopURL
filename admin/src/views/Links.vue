@@ -51,6 +51,10 @@
           </div>
         </div>
 
+        <p v-if="operationMessage" class="operation-message" :class="`operation-message-${operationStatus}`" role="status">
+          {{ operationMessage }}
+        </p>
+
             <!-- Links Table -->
             <div class="table-section">
               <LinksTable 
@@ -118,17 +122,19 @@ import { ref, onMounted, computed } from 'vue'
 import { api } from '../api'
 import LinksTable from '../components/LinksTable.vue'
 import StatsModal from '../components/StatsModal.vue'
-import { useAuth } from '../auth'
-
-const { currentUser } = useAuth()
 
 const links = ref([])
 const loading = ref(false)
 const error = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
+const totalLinkCount = ref(0)
+const totalClickCount = ref(0)
+const averageClickCount = ref(0)
 const showStatsModal = ref(false)
 const selectedLink = ref(null)
+const operationMessage = ref('')
+const operationStatus = ref('success')
 
 const ITEMS_PER_PAGE = 8
 
@@ -136,18 +142,22 @@ const loadLinks = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Always make real API calls
     const skip = (currentPage.value - 1) * ITEMS_PER_PAGE
-    const response = await api.get(`/admin/links?skip=${skip}&limit=${ITEMS_PER_PAGE}`)
-    links.value = response.data
-    
-    // Get total count for proper pagination
-    const totalResponse = await api.get('/admin/links')
-    const totalLinks = totalResponse.data.length
-    totalPages.value = Math.max(1, Math.ceil(totalLinks / ITEMS_PER_PAGE))
+    const response = await api.get('/admin/links', {
+      params: { skip, limit: ITEMS_PER_PAGE }
+    })
+    const page = response.data
+    links.value = page.items
+    totalLinkCount.value = page.total
+    totalClickCount.value = page.total_clicks
+    averageClickCount.value = page.average_clicks
+    totalPages.value = Math.max(1, Math.ceil(totalLinkCount.value / ITEMS_PER_PAGE))
+    return true
   } catch (err) {
-    console.error('Error loading links:', err)
-    error.value = 'Failed to load links. Please try again.'
+    error.value = err.response?.status === 401
+      ? 'Your session has expired. Redirecting to sign in.'
+      : err.response?.data?.detail || 'Failed to load links. Please try again.'
+    return false
   } finally {
     loading.value = false
   }
@@ -170,41 +180,45 @@ const closeStatsModal = () => {
   selectedLink.value = null
 }
 
-const totalLinks = computed(() => links.value.length)
+const totalLinks = computed(() => totalLinkCount.value)
 
 const totalClicks = computed(() => {
-  return links.value.reduce((sum, link) => sum + link.clicks, 0)
+  return totalClickCount.value
 })
 
 const averageClicks = computed(() => {
-  if (links.value.length === 0) return 0
-  return Math.round(totalClicks.value / links.value.length)
+  return averageClickCount.value
 })
 
 const handleDeleteLink = async (shortCode) => {
   if (confirm('Are you sure you want to delete this link?')) {
+    operationMessage.value = ''
     try {
-      // Always make real API call
       await api.delete(`/admin/links/${shortCode}`)
-      await loadLinks() // Refresh the list
-    } catch (error) {
-      console.error('Error deleting link:', error)
-      alert('Failed to delete link')
+      if (await loadLinks()) {
+        operationStatus.value = 'success'
+        operationMessage.value = 'Link deleted.'
+      }
+    } catch (err) {
+      operationStatus.value = 'error'
+      operationMessage.value = err.response?.data?.detail || 'Unable to delete the link. Please try again.'
     }
   }
 }
 
 const clearAllLinks = async () => {
   if (confirm('Are you sure you want to delete ALL links? This action cannot be undone!')) {
+    operationMessage.value = ''
     try {
-      // Always make real API call
       await api.delete('/admin/links/clear/all')
       currentPage.value = 1
-      await loadLinks() // Refresh the list
-      alert('All links have been cleared')
-    } catch (error) {
-      console.error('Error clearing links:', error)
-      alert('Failed to clear links')
+      if (await loadLinks()) {
+        operationStatus.value = 'success'
+        operationMessage.value = 'All links have been cleared.'
+      }
+    } catch (err) {
+      operationStatus.value = 'error'
+      operationMessage.value = err.response?.data?.detail || 'Unable to clear links. Please try again.'
     }
   }
 }
@@ -218,6 +232,22 @@ onMounted(() => {
 .links-page {
   min-height: 100vh;
   background: #fafbfc;
+}
+
+.operation-message {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.operation-message-success {
+  background: #e6fffa;
+  color: #1f7a4d;
+}
+
+.operation-message-error {
+  background: #fff5f5;
+  color: #b42318;
 }
 
 /* Header Section */

@@ -136,7 +136,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Vue.js
 dist/
@@ -178,14 +177,15 @@ backend/app/__pycache__/
 backend/app/*/__pycache__/
 admin/dist/
 admin/.vite/
-.vercel
+
+# Local deployment-provider state. Deployment configuration files remain trackable.
+.vercel/
 
 # Deployment and build artifacts
 .netlify/
-.netlify.toml
-_redirects
-vercel.json
-*.toml
+
+# Deployment configuration files such as vercel.json, _redirects, and
+# provider TOML files are intentionally trackable.
 
 # Logs and temporary files
 *.log

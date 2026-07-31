@@ -2,8 +2,12 @@
   <div class="links-table">
     <h2>Shortened Links</h2>
     
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="loading" role="status">
       Loading links...
+    </div>
+
+    <div v-else-if="error" class="error" role="alert">
+      {{ error }}
     </div>
     
     <div v-else-if="links.length === 0" class="no-links">
@@ -28,12 +32,12 @@
               <span class="short-code">{{ link.short_code }}</span>
             </td>
             <td class="original-url">
-              <a :href="link.original_url" target="_blank" :title="link.original_url">
+              <a :href="link.original_url" target="_blank" rel="noopener noreferrer" :title="link.original_url">
                 {{ link.original_url }}
               </a>
             </td>
             <td class="short-url">
-              <a :href="link.short_url" target="_blank">{{ link.short_url }}</a>
+              <a :href="link.short_url" target="_blank" rel="noopener noreferrer">{{ link.short_url }}</a>
             </td>
             <td class="clicks">{{ link.clicks }}</td>
             <td class="created">{{ formatDate(link.created_at) }}</td>
@@ -47,14 +51,14 @@
       </table>
     </div>
     
-    <div v-if="error" class="error">
-      {{ error }}
-    </div>
+    <p v-if="copyMessage" class="copy-feedback" :class="`copy-feedback-${copyStatus}`" role="status">
+      {{ copyMessage }}
+    </p>
   </div>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   links: {
@@ -72,6 +76,8 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['viewStats', 'deleteLink', 'refresh'])
+const copyMessage = ref('')
+const copyStatus = ref('success')
 
 const truncateUrl = (url) => {
   if (url.length > 50) {
@@ -95,9 +101,11 @@ const deleteLink = (shortCode) => {
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
-  } catch (err) {
-    console.error('Failed to copy: ', err)
+    copyStatus.value = 'success'
+    copyMessage.value = 'Short link copied to your clipboard.'
+  } catch {
+    copyStatus.value = 'error'
+    copyMessage.value = 'Unable to copy the link. Select it and copy manually.'
   }
 }
 </script>
@@ -281,6 +289,19 @@ button {
   color: #721c24;
   border-radius: 8px;
   border-left: 4px solid #dc3545;
+}
+
+.copy-feedback {
+  margin: 1rem 2rem;
+  font-size: 0.9rem;
+}
+
+.copy-feedback-success {
+  color: #1f7a4d;
+}
+
+.copy-feedback-error {
+  color: #b42318;
 }
 
 /* Responsive Design */

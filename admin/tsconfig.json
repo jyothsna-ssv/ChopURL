@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "isolatedModules": true,
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "jsx": "preserve"
+  },
+  "include": ["src/**/*.js", "src/**/*.ts", "src/**/*.vue", "vite.config.js", "vitest.config.js"]
+}

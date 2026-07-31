@@ -1,14 +1,36 @@
 <script setup>
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useAuth } from './auth'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const { currentUser, signOut } = useAuth()
+const statusMessage = ref('')
+const errorMessage = ref('')
 
 const handleSignOut = async () => {
-  await signOut()
-  router.push('/')
+  statusMessage.value = ''
+  errorMessage.value = ''
+  try {
+    await signOut()
+    statusMessage.value = 'You have been signed out.'
+    await router.push('/')
+  } catch {
+    errorMessage.value = 'Unable to sign out. Please try again.'
+  }
 }
+
+const handleExpiredSession = async () => {
+  statusMessage.value = ''
+  errorMessage.value = ''
+  await router.push({
+    name: 'Login',
+    query: { expired: '1', redirect: router.currentRoute.value.fullPath },
+  })
+}
+
+onMounted(() => window.addEventListener('chopurl:session-expired', handleExpiredSession))
+onBeforeUnmount(() => window.removeEventListener('chopurl:session-expired', handleExpiredSession))
 </script>
 
 <template>
@@ -35,6 +57,13 @@ const handleSignOut = async () => {
         </div>
       </div>
     </nav>
+
+    <p v-if="statusMessage" class="app-message app-message-success" role="status">
+      {{ statusMessage }}
+    </p>
+    <p v-if="errorMessage" class="app-message app-message-error" role="alert">
+      {{ errorMessage }}
+    </p>
     
     <router-view />
   </div>
@@ -54,6 +83,29 @@ body {
 
 .app {
   min-height: 100vh;
+}
+
+.app-message {
+  position: fixed;
+  top: 68px;
+  left: 50%;
+  z-index: 1001;
+  max-width: calc(100% - 2rem);
+  margin: 0;
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  transform: translateX(-50%);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+}
+
+.app-message-success {
+  background: #e6fffa;
+  color: #0f5132;
+}
+
+.app-message-error {
+  background: #fff5f5;
+  color: #9b2c2c;
 }
 
 /* Navbar */

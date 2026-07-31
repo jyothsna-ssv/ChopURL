@@ -60,7 +60,7 @@
       </div>
       <div class="short-url">
         <div class="url-display">
-          <a :href="result.short_url" target="_blank" class="url-link">{{ result.short_url }}</a>
+          <a :href="result.short_url" target="_blank" rel="noopener noreferrer" class="url-link">{{ result.short_url }}</a>
         </div>
         <button @click="copyToClipboard(result.short_url)" class="copy-btn">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -70,9 +70,12 @@
           <span>Copy</span>
         </button>
       </div>
+      <p v-if="copyMessage" class="copy-feedback" :class="`copy-feedback-${copyStatus}`" role="status">
+        {{ copyMessage }}
+      </p>
     </div>
     
-    <div v-if="error" class="error">
+    <div v-if="error" class="error" role="alert">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="10"></circle>
         <line x1="15" y1="9" x2="9" y2="15"></line>
@@ -90,6 +93,8 @@ import { api } from '../api'
 const loading = ref(false)
 const error = ref('')
 const result = ref(null)
+const copyMessage = ref('')
+const copyStatus = ref('success')
 
 const formData = reactive({
   url: '',
@@ -100,24 +105,19 @@ const shortenUrl = async () => {
   loading.value = true
   error.value = ''
   result.value = null
+  copyMessage.value = ''
   
   try {
-    console.log('Making API call to:', api.defaults.baseURL + '/shorten')
-    console.log('Data being sent:', { url: formData.url, custom_code: formData.customCode || undefined })
-    
-    // Always make real API call for now
     const response = await api.post('/shorten', {
       url: formData.url,
       custom_code: formData.customCode || undefined
     })
-    
-    console.log('API response:', response.data)
     result.value = response.data
     
     formData.url = ''
     formData.customCode = ''
   } catch (err) {
-    if (err.response?.status === 400 && err.response?.data?.detail?.includes('already exists')) {
+    if (err.response?.status === 409) {
       error.value = `Custom code '${formData.customCode}' is already in use. Please choose a different one.`
     } else {
       error.value = err.response?.data?.detail || 'An error occurred'
@@ -130,9 +130,11 @@ const shortenUrl = async () => {
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    alert('Copied to clipboard!')
-  } catch (err) {
-    console.error('Failed to copy: ', err)
+    copyStatus.value = 'success'
+    copyMessage.value = 'Short link copied to your clipboard.'
+  } catch {
+    copyStatus.value = 'error'
+    copyMessage.value = 'Unable to copy the link. Select it and copy manually.'
   }
 }
 </script>
@@ -303,6 +305,19 @@ const copyToClipboard = async (text) => {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.copy-feedback {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
+.copy-feedback-success {
+  color: #1f7a4d;
+}
+
+.copy-feedback-error {
+  color: #b42318;
 }
 
 .url-display {
