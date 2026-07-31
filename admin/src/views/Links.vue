@@ -118,15 +118,15 @@ import { ref, onMounted, computed } from 'vue'
 import { api } from '../api'
 import LinksTable from '../components/LinksTable.vue'
 import StatsModal from '../components/StatsModal.vue'
-import { useAuth } from '../auth'
-
-const { currentUser } = useAuth()
 
 const links = ref([])
 const loading = ref(false)
 const error = ref('')
 const currentPage = ref(1)
 const totalPages = ref(1)
+const totalLinkCount = ref(0)
+const totalClickCount = ref(0)
+const averageClickCount = ref(0)
 const showStatsModal = ref(false)
 const selectedLink = ref(null)
 
@@ -136,17 +136,17 @@ const loadLinks = async () => {
   loading.value = true
   error.value = ''
   try {
-    // Always make real API calls
     const skip = (currentPage.value - 1) * ITEMS_PER_PAGE
-    const response = await api.get(`/admin/links?skip=${skip}&limit=${ITEMS_PER_PAGE}`)
-    links.value = response.data
-    
-    // Get total count for proper pagination
-    const totalResponse = await api.get('/admin/links')
-    const totalLinks = totalResponse.data.length
-    totalPages.value = Math.max(1, Math.ceil(totalLinks / ITEMS_PER_PAGE))
-  } catch (err) {
-    console.error('Error loading links:', err)
+    const response = await api.get('/admin/links', {
+      params: { skip, limit: ITEMS_PER_PAGE }
+    })
+    const page = response.data
+    links.value = page.items
+    totalLinkCount.value = page.total
+    totalClickCount.value = page.total_clicks
+    averageClickCount.value = page.average_clicks
+    totalPages.value = Math.max(1, Math.ceil(totalLinkCount.value / ITEMS_PER_PAGE))
+  } catch {
     error.value = 'Failed to load links. Please try again.'
   } finally {
     loading.value = false
@@ -170,25 +170,22 @@ const closeStatsModal = () => {
   selectedLink.value = null
 }
 
-const totalLinks = computed(() => links.value.length)
+const totalLinks = computed(() => totalLinkCount.value)
 
 const totalClicks = computed(() => {
-  return links.value.reduce((sum, link) => sum + link.clicks, 0)
+  return totalClickCount.value
 })
 
 const averageClicks = computed(() => {
-  if (links.value.length === 0) return 0
-  return Math.round(totalClicks.value / links.value.length)
+  return averageClickCount.value
 })
 
 const handleDeleteLink = async (shortCode) => {
   if (confirm('Are you sure you want to delete this link?')) {
     try {
-      // Always make real API call
       await api.delete(`/admin/links/${shortCode}`)
-      await loadLinks() // Refresh the list
-    } catch (error) {
-      console.error('Error deleting link:', error)
+      await loadLinks()
+    } catch {
       alert('Failed to delete link')
     }
   }
@@ -197,13 +194,11 @@ const handleDeleteLink = async (shortCode) => {
 const clearAllLinks = async () => {
   if (confirm('Are you sure you want to delete ALL links? This action cannot be undone!')) {
     try {
-      // Always make real API call
       await api.delete('/admin/links/clear/all')
       currentPage.value = 1
-      await loadLinks() // Refresh the list
+      await loadLinks()
       alert('All links have been cleared')
-    } catch (error) {
-      console.error('Error clearing links:', error)
+    } catch {
       alert('Failed to clear links')
     }
   }

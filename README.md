@@ -180,6 +180,7 @@ cp .env.example .env
 ```env
 REDIS_URL=redis://localhost:6379
 BASE_URL=http://localhost:8000
+ALLOWED_ORIGINS=["http://localhost:5173"]
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_JWT_SECRET=your-supabase-jwt-secret
@@ -234,7 +235,7 @@ npm run dev
    ```bash
    curl http://localhost:8000/health
    ```
-   Expected: `{"status":"healthy"}`
+   Expected: a readiness response such as `{"status":"ready","checks":{"redis":"ok","supabase_auth":"ok"}}`
     
 
 2. **Frontend Access:**
@@ -242,6 +243,18 @@ npm run dev
 
 3. **API Documentation:**
    Visit `http://localhost:8000/docs` for interactive API docs
+
+---
+
+## Docker Compose
+
+Set the Supabase values in a root `.env` file or export them in your shell, then run:
+
+```bash
+docker compose up --build
+```
+
+This starts Redis, the FastAPI service on `http://localhost:8000`, and the Vue app on `http://localhost:5173`. The frontend build reads `VITE_API_BASE_URL`, `VITE_SUPABASE_URL`, and `VITE_SUPABASE_ANON_KEY` at build time.
 
 ---
 
@@ -253,9 +266,17 @@ npm run dev
 | --- | --- | --- |
 | `REDIS_URL` | Recommended | Redis connection URL. Defaults to `redis://localhost:6379`. |
 | `BASE_URL` | Recommended | Public base URL used when generating short links. For local dev, use `http://localhost:8000`. |
+| `ALLOWED_ORIGINS` | Required in production | JSON list of browser origins permitted to call the API, for example `["https://app.example.com"]`. |
 | `SUPABASE_URL` | Yes for auth | Supabase project URL. |
 | `SUPABASE_ANON_KEY` | Yes for auth | Supabase anon/public API key. |
 | `SUPABASE_JWT_SECRET` | Recommended | JWT secret used for local token verification before falling back to Supabase user lookup. |
+| `BLOCKED_HOSTS` | Optional | JSON list of destination hosts or subdomains to reject. Private and local destinations are always rejected. |
+| `USER_CREATE_LIMIT_PER_DAY` | Recommended | Authenticated link creation quota. Defaults to `100`. |
+| `ANONYMOUS_CREATE_LIMIT_PER_DAY` | Recommended | Per-IP anonymous link creation quota. Defaults to `20`. |
+| `SHORTEN_RATE_LIMIT` | Recommended | Per-IP shortening rate limit. Defaults to `10/minute`. |
+| `REDIRECT_RATE_LIMIT` | Recommended | Per-IP redirect rate limit. Defaults to `120/minute`. |
+| `STATS_RATE_LIMIT` | Recommended | Per-IP statistics rate limit. Defaults to `60/minute`. |
+| `ADMIN_RATE_LIMIT` | Recommended | Per-IP authenticated API rate limit. Defaults to `60/minute`. |
 
 ### **Frontend (`admin/.env`)**
 
@@ -294,7 +315,13 @@ Authorization: Bearer <supabase-access-token>
 ```http
 GET /health
 ```
-**Response:** `{"status":"healthy"}`
+Readiness check. It verifies Redis and Supabase Auth configuration and returns `503` when a required dependency is unavailable.
+
+```http
+GET /health/live
+```
+
+Liveness check. It does not require external dependencies.
 
 
 #### **2. Shorten URL**
@@ -317,9 +344,10 @@ Content-Type: application/json
 }
 ```
 
-If a signed-in user creates the link, the backend associates the short code with that user for dashboard management. If an attached optional token is stale or invalid, the public shorten request still works anonymously.
+If a signed-in user creates the link, the backend associates the short code with that user for dashboard management. Requests without a bearer token remain anonymous; an invalid or expired bearer token is rejected rather than silently creating an unowned link.
 
 Custom codes must be 3-32 characters and can contain letters, numbers, underscores, and hyphens. Reserved routes such as `api`, `docs`, and `health` cannot be used as short codes.
+Shortening requests are rate-limited, subject to daily authenticated or anonymous quotas, and reject local, private, reserved, or configured blocked destinations.
 
 #### **3. Redirect (Short URL)**
 ```http
@@ -332,7 +360,18 @@ GET /{short_code}
 GET /api/v1/stats/{short_code}
 ```
 
-**Response:**
+Without an owner token, statistics are intentionally limited:
+
+```json
+{
+  "short_code": "abc123",
+  "short_url": "http://localhost:8000/abc123",
+  "clicks": 5
+}
+```
+
+The owner can send the bearer token to receive detailed analytics:
+
 ```json
 {
   "short_code": "abc123",
@@ -349,21 +388,24 @@ GET /api/v1/stats/{short_code}
 
 #### **5. Admin - Get All Links**
 ```http
-GET /api/v1/admin/links?skip=0&limit=15
+GET /api/v1/admin/links?skip=0&limit=8
 Authorization: Bearer <supabase-access-token>
 ```
 
-Returns the current user's links only.
+Returns the current user's links only, along with pagination and dataset-wide dashboard totals:
 
-#### **6. Admin - Count Links**
-```http
-GET /api/v1/admin/links/count
-Authorization: Bearer <supabase-access-token>
+```json
+{
+  "items": [],
+  "total": 127,
+  "skip": 0,
+  "limit": 8,
+  "total_clicks": 245,
+  "average_clicks": 1.93
+}
 ```
 
-Returns `{ "total": 12 }` for dashboard pagination.
-
-#### **7. Admin - Delete Link**
+#### **6. Admin - Delete Link**
 ```http
 DELETE /api/v1/admin/links/{short_code}
 Authorization: Bearer <supabase-access-token>
@@ -371,7 +413,7 @@ Authorization: Bearer <supabase-access-token>
 
 Deletes the link only if it belongs to the current user.
 
-#### **8. Admin - Clear All Links**
+#### **7. Admin - Clear All Links**
 ```http
 DELETE /api/v1/admin/links/clear/all
 Authorization: Bearer <supabase-access-token>
@@ -379,7 +421,7 @@ Authorization: Bearer <supabase-access-token>
 
 Clears all links owned by the current user.
 
-#### **9. Auth - Current User**
+#### **8. Auth - Current User**
 ```http
 GET /api/v1/auth/me
 Authorization: Bearer <supabase-access-token>
@@ -451,12 +493,24 @@ Authorization: Bearer <supabase-access-token>
 
 ### **Automated Testing**
 
-Backend service tests cover custom-code validation, collision retries, click tracking, owner-scoped deletion, pagination counts, and anonymous-versus-authenticated URL deduplication.
+Backend tests cover atomic alias reservations, collision retries, concurrent click counting, TTL handling, owner-scoped deletion, pagination, anonymous-versus-authenticated URL deduplication, readiness, and invalid or expired tokens.
 
 ```bash
 cd backend
 python -m unittest discover -s tests -v
 ```
+
+Frontend quality checks:
+
+```bash
+cd admin
+npm run lint
+npm run test:unit
+npm run type-check
+npm run build
+```
+
+The frontend checks include API configuration coverage, a Vue component test for link actions, ESLint source checks, and Vue type checking. GitHub Actions runs the backend suite and all frontend checks on pushes and pull requests.
 
 ---
 

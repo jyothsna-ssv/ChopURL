@@ -12,25 +12,25 @@
           </h1>
           <p class="hero-description">
             Transform long URLs into short, memorable links. Track analytics, 
-            customize your links, and share with confidence.
+            customize your links, and manage them from a signed-in dashboard.
           </p>
           <div class="hero-stats">
             <div class="stat-card">
              
               <div class="stat-content">
-                <span class="stat-number">∞</span>
-                <span class="stat-label">Links Created</span>
+                <span class="stat-number">Custom</span>
+                <span class="stat-label">Short Codes</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-content">
-                <span class="stat-number">99.9%</span>
-                <span class="stat-label">Uptime</span>
+                <span class="stat-number">Auth</span>
+                <span class="stat-label">User Dashboard</span>
               </div>
             </div>
             <div class="stat-card">
               <div class="stat-content">
-                <span class="stat-number">Real-time</span>
+                <span class="stat-number">Click</span>
                 <span class="stat-label">Analytics</span>
               </div>
             </div>
@@ -53,7 +53,7 @@
         <div class="container">
           <div class="section-header">
             <h2>Why Choose ChopURL?</h2>
-            <p>Powerful features for modern link management</p>
+            <p>A practical full-stack URL shortener with authentication and analytics</p>
           </div>
           
           <div class="features-grid">
@@ -87,7 +87,7 @@
                 </svg>
               </div>
               <h3>Instant Redirects</h3>
-              <p>Fast URL redirection with Redis backend. Your shortened links redirect users instantly to original URLs.</p>
+              <p>Redis-backed URL lookup keeps redirects simple and quick for local development and demos.</p>
             </div>
             
             <div class="feature-card">

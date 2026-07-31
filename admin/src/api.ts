@@ -1,8 +1,9 @@
 import axios from "axios";
 import { supabase } from './supabase'
+import { apiBaseUrl } from './config'
 
 export const api = axios.create({
-  baseURL: 'http://localhost:8000/api/v1'
+  baseURL: apiBaseUrl
 });
 
 // Attach auth token to every request

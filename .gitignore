@@ -136,7 +136,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Vue.js
 dist/
@@ -182,10 +181,9 @@ admin/.vite/
 
 # Deployment and build artifacts
 .netlify/
-.netlify.toml
-_redirects
-vercel.json
-*.toml
+
+# Deployment configuration files such as vercel.json, _redirects, and
+# provider TOML files are intentionally trackable.
 
 # Logs and temporary files
 *.log

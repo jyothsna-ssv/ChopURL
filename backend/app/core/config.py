@@ -28,9 +28,13 @@ class Settings(BaseSettings):
     # URL Settings
     BASE_URL: str = "http://localhost:8000"
     SHORT_URL_LENGTH: int = 6
-    
-    # Security
-    SECRET_KEY: str = "your-secret-key-here"
+    BLOCKED_HOSTS: List[str] = []
+    USER_CREATE_LIMIT_PER_DAY: int = 100
+    ANONYMOUS_CREATE_LIMIT_PER_DAY: int = 20
+    SHORTEN_RATE_LIMIT: str = "10/minute"
+    REDIRECT_RATE_LIMIT: str = "120/minute"
+    STATS_RATE_LIMIT: str = "60/minute"
+    ADMIN_RATE_LIMIT: str = "60/minute"
     
     # Supabase
     SUPABASE_URL: str = ""  # User will fill in

@@ -102,16 +102,10 @@ const shortenUrl = async () => {
   result.value = null
   
   try {
-    console.log('Making API call to:', api.defaults.baseURL + '/shorten')
-    console.log('Data being sent:', { url: formData.url, custom_code: formData.customCode || undefined })
-    
-    // Always make real API call for now
     const response = await api.post('/shorten', {
       url: formData.url,
       custom_code: formData.customCode || undefined
     })
-    
-    console.log('API response:', response.data)
     result.value = response.data
     
     formData.url = ''
@@ -131,8 +125,8 @@ const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
     alert('Copied to clipboard!')
-  } catch (err) {
-    console.error('Failed to copy: ', err)
+  } catch {
+    alert('Unable to copy the link to your clipboard.')
   }
 }
 </script>

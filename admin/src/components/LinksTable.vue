@@ -54,8 +54,6 @@
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue'
-
 const props = defineProps({
   links: {
     type: Array,
@@ -96,8 +94,8 @@ const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
     alert('Copied to clipboard!')
-  } catch (err) {
-    console.error('Failed to copy: ', err)
+  } catch {
+    alert('Unable to copy the link to your clipboard.')
   }
 }
 </script>

@@ -63,9 +63,8 @@ async def get_optional_user(authorization: str = Header(None)):
     """Optionally authenticate user. Returns user_id or None."""
     if not authorization or not authorization.startswith("Bearer "):
         return None
-    
+
     token = authorization.split(" ", 1)[1]
-    try:
-        return await _get_supabase_user_id(token)
-    except HTTPException:
-        return None
+    # A supplied token must either identify its owner or fail explicitly.
+    # Falling back to anonymous creation produces links the user cannot manage.
+    return await _get_supabase_user_id(token)
