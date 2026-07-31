@@ -230,6 +230,6 @@ See [SECURITY.md](SECURITY.md) for reporting guidance, trust boundaries, secret 
 
 ## License
 
-This repository does not currently include a license file.
+This project is licensed under the [MIT License](LICENSE).
 
 Built by Jyothsna Karuparthi.
