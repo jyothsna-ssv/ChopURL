@@ -11,10 +11,13 @@ supabase.auth.onAuthStateChange((event, session) => {
 })
 
 // Initialize - check current session
-supabase.auth.getSession().then(({ data: { session } }) => {
-  currentUser.value = session?.user ?? null
-  loading.value = false
-})
+supabase.auth.getSession()
+  .then(({ data: { session } }) => {
+    currentUser.value = session?.user ?? null
+  })
+  .finally(() => {
+    loading.value = false
+  })
 
 export const useAuth = () => {
   const signInWithEmail = async (email, password) => {

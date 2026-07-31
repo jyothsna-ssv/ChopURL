@@ -19,6 +19,10 @@ const confirmPassword = ref('')
 const resetPassword = ref('')
 const confirmResetPassword = ref('')
 
+if (route.query.expired === '1') {
+  error.value = 'Your session expired. Please sign in again.'
+}
+
 const isSignUp = computed(() => mode.value === 'sign-up')
 const isForgotPassword = computed(() => mode.value === 'forgot')
 const isResetPassword = computed(() => mode.value === 'reset')
@@ -68,7 +72,6 @@ const handleEmailAuth = async () => {
       if (!validateMatchingPasswords(password.value, confirmPassword.value)) return
 
       await signUpWithEmail(email.value, password.value, username.value.trim())
-      success.value = 'Account created. Check your email for a confirmation link.'
       setMode('sign-in')
       success.value = 'Account created. Check your email for a confirmation link.'
     } else if (isForgotPassword.value) {
@@ -78,7 +81,6 @@ const handleEmailAuth = async () => {
       if (!validateMatchingPasswords(resetPassword.value, confirmResetPassword.value)) return
 
       await updatePassword(resetPassword.value)
-      success.value = 'Password updated. You can sign in with your new password.'
       setMode('sign-in')
       success.value = 'Password updated. You can sign in with your new password.'
     } else {
@@ -162,7 +164,7 @@ watch(
           </p>
         </div>
 
-        <div v-if="success" class="success-msg">
+        <div v-if="success" class="success-msg" role="status">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
             <path d="M9 12l2 2 4-4"></path>
             <circle cx="12" cy="12" r="10"></circle>
@@ -170,7 +172,7 @@ watch(
           <span>{{ success }}</span>
         </div>
 
-        <div v-if="error" class="error-msg">
+        <div v-if="error" class="error-msg" role="alert">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
             <circle cx="12" cy="12" r="10"></circle>
             <line x1="15" y1="9" x2="9" y2="15"></line>

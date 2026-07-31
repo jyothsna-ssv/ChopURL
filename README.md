@@ -282,7 +282,7 @@ This starts Redis, the FastAPI service on `http://localhost:8000`, and the Vue a
 
 | Variable | Required | Description |
 | --- | --- | --- |
-| `VITE_API_BASE_URL` | Recommended | Backend API base URL. Defaults to `http://localhost:8000/api/v1`. |
+| `VITE_API_BASE_URL` | Required for separate frontend/API deployments | Backend API base URL. Local development defaults to `http://localhost:8000/api/v1`; production builds without it use same-origin `/api/v1`. |
 | `VITE_SUPABASE_URL` | Yes for auth | Supabase project URL used by the Vue app. |
 | `VITE_SUPABASE_ANON_KEY` | Yes for auth | Supabase anon/public API key used by the Vue app. |
 

@@ -30,11 +30,12 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { session }, error } = await supabase.auth.getSession()
+  const activeSession = error ? null : session
   
-  if (to.meta.requiresAuth && !session) {
+  if (to.meta.requiresAuth && !activeSession) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else if (to.meta.guestOnly && session && to.query.mode !== 'reset') {
+  } else if (to.meta.guestOnly && activeSession && to.query.mode !== 'reset') {
     next({ name: 'Home' })
   } else {
     next()

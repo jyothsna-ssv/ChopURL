@@ -51,6 +51,10 @@
           </div>
         </div>
 
+        <p v-if="operationMessage" class="operation-message" :class="`operation-message-${operationStatus}`" role="status">
+          {{ operationMessage }}
+        </p>
+
             <!-- Links Table -->
             <div class="table-section">
               <LinksTable 
@@ -129,6 +133,8 @@ const totalClickCount = ref(0)
 const averageClickCount = ref(0)
 const showStatsModal = ref(false)
 const selectedLink = ref(null)
+const operationMessage = ref('')
+const operationStatus = ref('success')
 
 const ITEMS_PER_PAGE = 8
 
@@ -146,8 +152,12 @@ const loadLinks = async () => {
     totalClickCount.value = page.total_clicks
     averageClickCount.value = page.average_clicks
     totalPages.value = Math.max(1, Math.ceil(totalLinkCount.value / ITEMS_PER_PAGE))
-  } catch {
-    error.value = 'Failed to load links. Please try again.'
+    return true
+  } catch (err) {
+    error.value = err.response?.status === 401
+      ? 'Your session has expired. Redirecting to sign in.'
+      : err.response?.data?.detail || 'Failed to load links. Please try again.'
+    return false
   } finally {
     loading.value = false
   }
@@ -182,24 +192,33 @@ const averageClicks = computed(() => {
 
 const handleDeleteLink = async (shortCode) => {
   if (confirm('Are you sure you want to delete this link?')) {
+    operationMessage.value = ''
     try {
       await api.delete(`/admin/links/${shortCode}`)
-      await loadLinks()
-    } catch {
-      alert('Failed to delete link')
+      if (await loadLinks()) {
+        operationStatus.value = 'success'
+        operationMessage.value = 'Link deleted.'
+      }
+    } catch (err) {
+      operationStatus.value = 'error'
+      operationMessage.value = err.response?.data?.detail || 'Unable to delete the link. Please try again.'
     }
   }
 }
 
 const clearAllLinks = async () => {
   if (confirm('Are you sure you want to delete ALL links? This action cannot be undone!')) {
+    operationMessage.value = ''
     try {
       await api.delete('/admin/links/clear/all')
       currentPage.value = 1
-      await loadLinks()
-      alert('All links have been cleared')
-    } catch {
-      alert('Failed to clear links')
+      if (await loadLinks()) {
+        operationStatus.value = 'success'
+        operationMessage.value = 'All links have been cleared.'
+      }
+    } catch (err) {
+      operationStatus.value = 'error'
+      operationMessage.value = err.response?.data?.detail || 'Unable to clear links. Please try again.'
     }
   }
 }
@@ -213,6 +232,22 @@ onMounted(() => {
 .links-page {
   min-height: 100vh;
   background: #fafbfc;
+}
+
+.operation-message {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+}
+
+.operation-message-success {
+  background: #e6fffa;
+  color: #1f7a4d;
+}
+
+.operation-message-error {
+  background: #fff5f5;
+  color: #b42318;
 }
 
 /* Header Section */
