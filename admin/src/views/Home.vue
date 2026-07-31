@@ -111,8 +111,15 @@
       <section class="cta-section">
         <div class="container">
           <div class="cta-content">
-            <router-link to="/links" class="btn btn-primary">
+            <router-link v-if="currentUser" to="/links" class="btn btn-primary">
               <span>View All Links</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14"></path>
+                <path d="M12 5l7 7-7 7"></path>
+              </svg>
+            </router-link>
+            <router-link v-else to="/login" class="btn btn-primary">
+              <span>Sign In to View Links</span>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M5 12h14"></path>
                 <path d="M12 5l7 7-7 7"></path>
@@ -127,6 +134,9 @@
 
 <script setup>
 import ShortenForm from '../components/ShortenForm.vue'
+import { useAuth } from '../auth'
+
+const { currentUser } = useAuth()
 </script>
 
 <style scoped>
@@ -143,6 +153,7 @@ import ShortenForm from '../components/ShortenForm.vue'
   align-items: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
+  padding-top: 60px;
 }
 
 .hero-background {

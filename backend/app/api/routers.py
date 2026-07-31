@@ -2,17 +2,17 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from app.models.schemas import URLRequest, URLResponse
 from app.services.links import LinkService
 from app.core.config import settings
+from app.core.auth import get_current_user, get_optional_user
 
 router = APIRouter()
 
 @router.post("/shorten", response_model=URLResponse)
-async def shorten_url(request: URLRequest):
+async def shorten_url(request: URLRequest, user_id: str = Depends(get_optional_user)):
     """Create a shortened URL"""
     try:
         link_service = LinkService()
-        # Convert HttpUrl to string
         url_str = str(request.url)
-        short_url = await link_service.create_short_url(url_str, request.custom_code)
+        short_url = await link_service.create_short_url(url_str, request.custom_code, user_id=user_id)
         return URLResponse(
             original_url=url_str,
             short_url=short_url,
@@ -53,23 +53,23 @@ async def get_url_stats(short_code: str):
 
 # Admin endpoints
 @router.get("/admin/links")
-async def get_all_links(skip: int = 0, limit: int = 15):
-    """Get all shortened links with pagination (admin only)"""
+async def get_all_links(skip: int = 0, limit: int = 15, user_id: str = Depends(get_current_user)):
+    """Get user's shortened links with pagination"""
     try:
         link_service = LinkService()
-        links = await link_service.get_all_links(skip=skip, limit=limit)
+        links = await link_service.get_all_links(skip=skip, limit=limit, user_id=user_id)
         return links
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/admin/links/{short_code}")
-async def delete_link(short_code: str):
-    """Delete a specific shortened link (admin only)"""
+async def delete_link(short_code: str, user_id: str = Depends(get_current_user)):
+    """Delete a specific shortened link (owner only)"""
     try:
         link_service = LinkService()
-        success = await link_service.delete_link(short_code)
+        success = await link_service.delete_link(short_code, user_id=user_id)
         if not success:
-            raise HTTPException(status_code=404, detail="Link not found")
+            raise HTTPException(status_code=404, detail="Link not found or not owned by you")
         return {"message": "Link deleted successfully"}
     except HTTPException:
         raise
@@ -77,11 +77,16 @@ async def delete_link(short_code: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/admin/links/clear/all")
-async def clear_all_links():
-    """Clear all shortened links (admin only)"""
+async def clear_all_links(user_id: str = Depends(get_current_user)):
+    """Clear all of the user's shortened links"""
     try:
         link_service = LinkService()
-        await link_service.clear_all_links()
-        return {"message": "All links cleared successfully"}
+        await link_service.clear_all_links(user_id=user_id)
+        return {"message": "All your links cleared successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/auth/me")
+async def get_me(user_id: str = Depends(get_current_user)):
+    """Get current user info"""
+    return {"user_id": user_id}

@@ -43,3 +43,13 @@ class URLStats(BaseModel):
                 "created_at": "2024-01-01T00:00:00"
             }
         }
+
+class UserInfo(BaseModel):
+    user_id: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "user_id": "uuid-string"
+            }
+        }

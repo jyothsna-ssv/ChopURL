@@ -17,10 +17,8 @@
         </div>
         
         <div class="header-text">
-          <h1 class="page-title">
-            Shortened Links
-          </h1>
-          <p class="page-subtitle">Manage and track all your shortened URLs</p>
+          <h1 class="page-title">Your Shortened Links</h1>
+          <p class="page-subtitle">Manage and track your shortened URLs</p>
         </div>
       </div>
     </header>
@@ -120,6 +118,9 @@ import { ref, onMounted, computed } from 'vue'
 import { api } from '../api'
 import LinksTable from '../components/LinksTable.vue'
 import StatsModal from '../components/StatsModal.vue'
+import { useAuth } from '../auth'
+
+const { currentUser } = useAuth()
 
 const links = ref([])
 const loading = ref(false)
@@ -225,6 +226,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 3rem 0;
+  padding-top: calc(3rem + 56px);
   overflow: hidden;
 }
 

@@ -51,10 +51,8 @@
           <div v-if="stats.clicks > 0" class="click-history">
             <h4>Recent Clicks</h4>
             <div class="click-list">
-              <div v-for="click in stats.click_history" :key="click.timestamp" class="click-item">
-                <span class="click-time">{{ formatDateTime(click.timestamp) }}</span>
-                <span class="click-ip">{{ click.ip_address }}</span>
-                <span class="click-user-agent">{{ click.user_agent }}</span>
+              <div v-for="(timestamp, index) in stats.click_history" :key="index" class="click-item">
+                <span class="click-time">{{ formatDateTime(timestamp) }}</span>
               </div>
             </div>
           </div>

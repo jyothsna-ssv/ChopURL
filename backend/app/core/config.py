@@ -14,8 +14,15 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:5174", 
         "http://localhost:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:5175",
+        "http://127.0.0.1:5176",
         "http://localhost:3000",
-        "http://localhost:8080"
+        "http://127.0.0.1:3000",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
     ]
     
     # URL Settings
@@ -24,6 +31,11 @@ class Settings(BaseSettings):
     
     # Security
     SECRET_KEY: str = "your-secret-key-here"
+    
+    # Supabase
+    SUPABASE_URL: str = ""  # User will fill in
+    SUPABASE_ANON_KEY: str = ""  # User will fill in
+    SUPABASE_JWT_SECRET: str = ""  # User will fill in from Supabase dashboard
     
     class Config:
         env_file = ".env"
