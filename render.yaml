@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: chopurl-api
+    runtime: docker
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health/ready
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: chopurl-redis
+          property: connectionString
+      - key: BASE_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: '["https://chop-url.vercel.app"]'
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+
+  - type: keyvalue
+    name: chopurl-redis
+    plan: free
+    ipAllowList: []
+    maxmemoryPolicy: noeviction

@@ -2,7 +2,12 @@
 
 ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supabase Auth. It supports public and authenticated shortening, custom aliases, owner-scoped link management, password reset, and click analytics.
 
-![ChopURL home screen](imgg/chop.png)
+## Screenshots
+
+<p align="center">
+  <img src="imgg/p4.png" alt="ChopURL shortening form" width="360" />
+  <img src="imgg/p5.png" alt="ChopURL owner dashboard" width="360" />
+</p>
 
 ## What It Does
 
@@ -15,7 +20,7 @@ ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supa
 - Supports signup, login, logout, confirmation messaging, forgotten-password emails, and reset-password callbacks through Supabase.
 - Applies configurable Redis-backed fixed-window rate limits and daily creation quotas.
 
-This is a single-service portfolio project. It does not claim distributed storage, fault tolerance, malware scanning, benchmarked latency, or production deployment.
+This is a single-service portfolio project. It does not claim distributed storage, fault tolerance, malware scanning, benchmarked latency, or a production SLA.
 
 ## Stack And Architecture
 
@@ -220,7 +225,11 @@ GitHub Actions runs the backend pytest suite and frontend lint, tests, type-chec
 
 ## Deployment Status And Limitations
 
-Docker Compose has been validated for local development. No production deployment target, benchmark, high-availability topology, replication strategy, or managed monitoring setup is configured in this repository.
+Docker Compose has been validated for local development. The portfolio deployment is live at [chop-url.vercel.app](https://chop-url.vercel.app), with the API at [chopurl-api.onrender.com](https://chopurl-api.onrender.com). The repository includes a Render Blueprint for the FastAPI API and Redis-compatible Key Value store, plus Vercel SPA routing configuration under `admin/`.
+
+Deploy the API through Render first, using `render.yaml`, and set `BASE_URL` and the Supabase values in the Render Dashboard. The Blueprint explicitly uses Render's free web and Key Value plans for a portfolio demo, and its `ALLOWED_ORIGINS` value must match the deployed Vercel frontend URL. Then deploy `admin/` as a Vercel project with `VITE_API_BASE_URL` set to the Render API URL followed by `/api/v1`, plus the two Supabase `VITE_` values. Configure that URL as a Supabase password-reset callback before using authentication in production.
+
+Free Render web services can spin down after idle time, and the free Key Value tier is in-memory only, so links and analytics can be lost after a Redis restart. This configuration is appropriate for demonstration use, not a durable production deployment.
 
 Redis is the only data store, so Redis data loss removes links and analytics. Click totals are atomically incremented in Redis, but analytics remain request-path work and there is no durable event stream or background processing. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current design and realistic next steps.
 
