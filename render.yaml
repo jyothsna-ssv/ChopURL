@@ -2,6 +2,7 @@ services:
   - type: web
     name: chopurl-api
     runtime: docker
+    plan: free
     dockerContext: ./backend
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /health/ready
@@ -25,5 +26,6 @@ services:
 
   - type: keyvalue
     name: chopurl-redis
+    plan: free
     ipAllowList: []
     maxmemoryPolicy: noeviction

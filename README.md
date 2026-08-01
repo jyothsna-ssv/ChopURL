@@ -222,7 +222,9 @@ GitHub Actions runs the backend pytest suite and frontend lint, tests, type-chec
 
 Docker Compose has been validated for local development. The repository includes a Render Blueprint for the FastAPI API and Redis-compatible Key Value store, plus Vercel SPA routing configuration under `admin/`. No production service has been deployed from this repository yet, and platform environment variables must be configured before deployment.
 
-Deploy the API through Render first, using `render.yaml`, and set `BASE_URL`, `ALLOWED_ORIGINS`, and the Supabase values in the Render Dashboard. Then deploy `admin/` as a Vercel project with `VITE_API_BASE_URL` set to the Render API URL followed by `/api/v1`, plus the two Supabase `VITE_` values. Update Render's `ALLOWED_ORIGINS` with the final Vercel URL and configure that URL as a Supabase password-reset callback before using authentication in production.
+Deploy the API through Render first, using `render.yaml`, and set `BASE_URL`, `ALLOWED_ORIGINS`, and the Supabase values in the Render Dashboard. The Blueprint explicitly uses Render's free web and Key Value plans for a portfolio demo. Then deploy `admin/` as a Vercel project with `VITE_API_BASE_URL` set to the Render API URL followed by `/api/v1`, plus the two Supabase `VITE_` values. Update Render's `ALLOWED_ORIGINS` with the final Vercel URL and configure that URL as a Supabase password-reset callback before using authentication in production.
+
+Free Render web services can spin down after idle time, and the free Key Value tier is in-memory only, so links and analytics can be lost after a Redis restart. This configuration is appropriate for demonstration use, not a durable production deployment.
 
 Redis is the only data store, so Redis data loss removes links and analytics. Click totals are atomically incremented in Redis, but analytics remain request-path work and there is no durable event stream or background processing. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current design and realistic next steps.
 
