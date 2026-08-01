@@ -57,6 +57,6 @@ Click counting uses `HINCRBY` inside a Redis transaction, so concurrent redirect
 
 ## Scalability Limits And Future Direction
 
-This deployment has one API process design and one Redis data store. Redis is both the redirect store and the analytics store, so data is not durable beyond Redis persistence and the redirect path also writes analytics. There is no clustering, replica/failover setup, background worker, durable event queue, or benchmark result in this repository.
+This deployment has one API process design and one Redis data store. Redis is both the redirect store and the analytics store, so data is not durable beyond Redis persistence and the redirect path also writes analytics. The repository includes Render and Vercel deployment configuration, but no production deployment, clustering, replica/failover setup, background worker, durable event queue, or benchmark result.
 
 A production evolution could store links in PostgreSQL, use Redis as a redirect cache, publish click events to Redis Streams or a queue, aggregate analytics in background workers, and run separately scalable redirect and management services. Those are future architecture options, not implemented features.

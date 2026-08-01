@@ -220,7 +220,9 @@ GitHub Actions runs the backend pytest suite and frontend lint, tests, type-chec
 
 ## Deployment Status And Limitations
 
-Docker Compose has been validated for local development. No production deployment target, benchmark, high-availability topology, replication strategy, or managed monitoring setup is configured in this repository.
+Docker Compose has been validated for local development. The repository includes a Render Blueprint for the FastAPI API and Redis-compatible Key Value store, plus Vercel SPA routing configuration under `admin/`. No production service has been deployed from this repository yet, and platform environment variables must be configured before deployment.
+
+Deploy the API through Render first, using `render.yaml`, and set `BASE_URL`, `ALLOWED_ORIGINS`, and the Supabase values in the Render Dashboard. Then deploy `admin/` as a Vercel project with `VITE_API_BASE_URL` set to the Render API URL followed by `/api/v1`, plus the two Supabase `VITE_` values. Update Render's `ALLOWED_ORIGINS` with the final Vercel URL and configure that URL as a Supabase password-reset callback before using authentication in production.
 
 Redis is the only data store, so Redis data loss removes links and analytics. Click totals are atomically incremented in Redis, but analytics remain request-path work and there is no durable event stream or background processing. See [ARCHITECTURE.md](ARCHITECTURE.md) for the current design and realistic next steps.
 
