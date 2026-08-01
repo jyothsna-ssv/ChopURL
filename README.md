@@ -5,8 +5,24 @@ ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supa
 ## Screenshots
 
 <p align="center">
+  <img src="imgg/chop.png" alt="ChopURL concept artwork" width="280" />
+</p>
+
+*ChopURL concept artwork.*
+
+<p align="center">
   <img src="imgg/p4.png" alt="ChopURL shortening form" width="360" />
   <img src="imgg/p5.png" alt="ChopURL owner dashboard" width="360" />
+</p>
+
+### Archived Local Development API Captures
+
+The following Postman captures document an earlier local-development stage. They are included as project history, not as current API references: the readiness response and authentication rules have since changed, and `/api/v1/admin/links` now requires a bearer token.
+
+<p align="center">
+  <img src="imgg/p1.png" alt="Archived local health-check request" width="280" />
+  <img src="imgg/p2.png" alt="Archived local shortening request" width="280" />
+  <img src="imgg/p3.png" alt="Archived local dashboard-list request" width="280" />
 </p>
 
 ## What It Does
