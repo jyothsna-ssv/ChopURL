@@ -2,7 +2,6 @@
 
 ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supabase Auth. It supports public and authenticated shortening, custom aliases, owner-scoped link management, password reset, and click analytics.
 
-## Screenshots
 
 <p align="center">
   <img src="imgg/chop.png" alt="ChopURL concept artwork" width="720" />
