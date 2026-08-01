@@ -16,7 +16,7 @@ services:
       - key: BASE_URL
         sync: false
       - key: ALLOWED_ORIGINS
-        sync: false
+        value: '["https://chop-url.vercel.app"]'
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_ANON_KEY
