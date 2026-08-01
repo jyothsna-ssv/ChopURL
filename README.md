@@ -5,10 +5,8 @@ ChopURL is a full-stack URL shortener built with FastAPI, Redis, Vue 3, and Supa
 ## Screenshots
 
 <p align="center">
-  <img src="imgg/chop.png" alt="ChopURL concept artwork" width="280" />
+  <img src="imgg/chop.png" alt="ChopURL concept artwork" width="720" />
 </p>
-
-*ChopURL concept artwork.*
 
 <p align="center">
   <img src="imgg/p4.png" alt="ChopURL shortening form" width="360" />
